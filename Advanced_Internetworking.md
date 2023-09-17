@@ -44,20 +44,22 @@ Network interface 网络端口: connection between host/router and physical link
 * Host 主机 typically has one network interface (or few)
 * **IP addresses associated with each network interface**
 
+NAT network address translation 网络地址翻译
+
 **IP subnet 子网**
 
 * Device interfaces with same subnet part of IP address
 * Can physically reach each other without intervening router
 
-**Classless Inter Domain Routing, CIDR 无类型域间选路**
+**IP address: Classless Inter Domain Routing, CIDR 无类型域间选路**
 
-a.b.c.d/x
+a.b.c.d/x, x=length of subnet part; host part = 32-x
 
 mask & IP Address == netID
 
-### Network layer
+### Network layer 网络层
 
-Connectionless Services
+Connectionless Services 无连接服务
 
 * The network layer treats each **packet** independently
 * Route lookup for each packet (**routing table**)
@@ -78,7 +80,7 @@ Following the end2end argument, only the absolutely necessary functionality is i
 * **Best-effort 尽力而为 service**: unreliable and connectionless
 * **Application or Transport layer handles reliability** 
 
-#### ICMP—RFC 792 
+#### ICMP—RFC 792
 
 **Internet Control Message Protocol 互联网控制报文协议**
 
@@ -156,9 +158,9 @@ congestion 拥塞
 
 Topics covered today should be familiar
 
-### network layer
+### Network layer again
 
-connetionless, between hosts through routers
+connetionless 无连接, between hosts through routers
 
 Virtual Circuits 虚电路
 
@@ -183,7 +185,11 @@ Fragmentation
 
 MTU (Maximum Transfer Unit) 最大传输单元
 
-ICMP—Internet Control Message Protocol 互联网控制消息协议
+ICMP—**Internet Control Message Protocol 互联网控制报文协议**
+
+**ARP Address Resolution Protocol 地址解析协议**
+
+**RARP Reverse Address Resolution Protocol 逆地址解析协议**
 
 ## 2023-08-31 Lab Q&A
 
@@ -210,9 +216,7 @@ Human-based control-plane is cumbersome. A network operator would have to:
 * … in a network with thousand of forwarding nodes …
 * … and milions of (possibly malicious) end hosts
 
-It does not scale.
-
-Desiderata: network automation! -> 路由协议，选路协议
+It does not scale. Desiderata (Latin för *ting/person att åtrå, Things desired*): network automation! -> （网络层）路由协议，选路协议
 
 The allocation of functionality and definition of interfaces among elements. The routing “architecture” is the decision about what are the control plane tasks and where are they located: 
 
@@ -266,9 +270,7 @@ An AS Boundary Router—attaches to other AS:s
 
 #### Alternative to OSPF: IS-IS
 
-Link-State Routing
-
-relies on Layer 2 transport (rather than IP)
+Link-State Routing, relies on Layer 2 transport (rather than IP)
 
 #### Distance-vector:  Bellman-ford distributed shortest-path computation
 
@@ -285,11 +287,11 @@ Split Horizon 水平分割, cannot solve all problems
 ### Routing Information Protocol - RIP 路由信息协议
 RIP-1 (RFC 1058), RIP-2 (RFC 2453)
 
-Metric is Hop Counts
+Metric is **Hop Counts**
 
 * 1: directly connected
-* 16: infinity
-* RIP cannot support networks with diameter > 15.
+* **16: infinity**
+  * RIP cannot support networks with diameter > 15.
 
 RIP uses distance vector
 
@@ -311,44 +313,57 @@ Split Horizon
 
 ### Summary: comparison
 
-## 2023-09-05 Lecture 4 – Routing: Inter-domain routing
+## 2023-09-05 Lecture 4 – Routing: Inter-domain routing 域间路由
 
-The Internet is huge and federated
+The Internet is **huge and federated**
 * Necessary to divide the routing problem into sub-problems.
 * Necessary to preserve routing control among domains
-* Both scalability and control can be solved with hierarchies
-External: the Internet is partitioned into Autonomous systems (AS)
-* An independent administrative domain
-* Routing between ASes is called inter-domain routing
-* Based on commercial agreements – Policies, Service-level-agreements
+* Both scalability and control can be solved with **hierarchies**
+
+External: the Internet is partitioned into **Autonomous systems (AS) 自治系统**
+
+* An independent administrative domain 自治域
+* Routing between ASes is called **inter-domain routing**
+* **Based on commercial agreements – Policies, Service-level-agreements**
+
 Internal: An AS may be further partitioned into areas.
+
 * Routing inside an AS: Intra-domain routing / Internal routing
 * Best path based on hop/bw metrics
 
 Autonomous Systems—RFC1930
 
+administered by a single entity: Operators, **ISPs (Internet Service Providers)**  
+
 intra-domain vs inter-domain routing
 
-### inter-domain routing: The Border Gateway Protocol (BGP) 边界网关协议
+Inter-domain additional constraints: preserve privacy of business critical routing policies, internal topology, … while scaling to global size!
+
+### Inter-domain routing: The Border Gateway Protocol (BGP) 边界网关协议
 
 abstracts networks by hiding internal details
 
-De-facto inter-domain routing protocol (version 4)
-Main purpose: Network reachability between autonomous systems
+De-facto inter-domain routing protocol (**BGP-4**)
+
+Main purpose: **Network reachability between autonomous systems**
+
 BGP messages carried by TCP
+
 * TCP is reliable: reduces the protocol complexity
-BGP uses path-vector - enhancement of distance-vector. 
-BGP supports policies – chosen by the local administrator
+BGP uses **path-vector - enhancement of distance-vector**
+BGP **supports policies – chosen by the local administrator**
 
 **computes best routes among the learnt one**
 
+established over TCP on port 179
+
 #### Architecture
 
-Autonomous system, AS 自治域
+BGP interacts with the internal routing (OSPF/IS-IS/RIP/...)  
 
-iBGP ASinternal
+iBGP AS internal
 
-eBGP AS exo
+eBGP AS eternal
 
 #### BGP Router Operation
 
@@ -358,9 +373,9 @@ A BGP router receives routes from
 
 A BGP router:
 
-* aggregates routes 
+* **aggregates** routes 
 * filters and modifies routes
-* according to some policy
+* according to some **policy**
 
 It advertises routes to its iBGP and eBGP neighbours
 
@@ -368,10 +383,10 @@ It advertises routes to its iBGP and eBGP neighbours
 
 **Path-vector** extends distance-vector
 
-* Instead of a simple cost, assign an AS-Path to every route
+* Instead of a simple cost, assign an **AS-Path** to every route
 * There may be many paths to the same destination (network prefix)
-* AS-Path used to implement policies and loop prevention
-* supports expressive routing policies (avoid an AS, prefer routes regardless of AS-path length
+* AS-Path used to implement **policies** and loop prevention
+* **supports expressive routing policies** (avoid an AS, prefer routes regardless of AS-path length
 
 ---
 
@@ -384,25 +399,47 @@ It advertises routes to its iBGP and eBGP neighbours
 
 #### Internal BGP scaling
 
-eBGP>IGP>iBGP
+**eBGP>IGP>iBGP**
 
-Distributed Bellman Ford routing: convergence vs expressiveness
+#### scalability: BGP route aggregation 路由聚合
 
-## 2023-09-06 Lecture 5—Multicast
+smaller routing tables, fewer prefixes
+
+Threats: multi-homing 多宿主 and load-balancing 负载均衡
+
+**Hierarchies: sub-AS divide-and-conquer 子自治域分治法**
+
+#### Distributed Bellman Ford routing
+
+**no guaranteed convergence; high routing expressiveness**
+
+BGP Routing instabilities: the Bad Gadget  
+
+## 2023-09-06 Lecture 5—Multicast 多播/组播
 
 ### IP Multicast Applications
 
 ### IP Multicast: Abstraction of HW Multicast
 
-IP-multicast addresses, class D addresses (binary prefix: 1110) 224.0.0.0 - 239.255.255.255
+IP-multicast addresses, **class D addresses (binary prefix: 1110) 224.0.0.0 - 239.255.255.255**
 
 28 bit multicast group id
 
-### Link-level/Hardware Multicast
+### IP Multicast Service Model
 
-Ethernet multicast addresses:
+Link-level/Hardware Multicast + Host-Router Protocal + Multicast Routing Protocals
 
-The low order bit of the high order byte is 1:
+链路层硬件多播+主机-路由协议+多播选路协议
+
+* **PIM Protocol Independent Multicast 独立多播协议**
+* **CBT Core-based trees 基于核心树**
+* **DVMRP Distance Vector Multicast Routing Protocol 距矢多播选路协议**
+* **MOSPF Multicast extension to OSPF 开放最短路优先的多播扩展**
+* **MBGP Multiprotocol Extensions for BGP 边界网关协议的多播扩展**
+
+#### Link-level/Hardware Multicast
+
+E.g. Ethernet Network Interface Card support multicast. Multicast addresses: The low order bit of the high order byte is 1:
 
 ```
 *1:**:**:**:**:**
@@ -410,54 +447,150 @@ The low order bit of the high order byte is 1:
 
 Many NICs on the same network may listen to the same Ethernet multicast address
 
-### Mapping IP Multicast to Ethernet: Translation
+Other Link-level layers may not support multicast: ATM Asynchronous Transfer Mode 异步传输模式, Frame Relay 帧中继, X.25 分封交换网 Packet switched network ... But multicast can still be implemented over these!
 
-IP to Ethernet multicast address mapping is not unique! 
+#### Mapping IP Multicast to Ethernet: Translation
+
+the IP multicast address is translated to an **Ethernet multicast address**.
+
+The 23 low order bits of the IP multicast address, placed in the 23 low order bits of the Ethernet MAC address: `0x 01:00:5E:00:00:00`
+
+IP to Ethernet multicast address mapping is **not unique**! 
+
 * 32:1 overlap
 * IP may receive multicast despite the lack of receiving process
 * IP-layer must be able to do filtering (based on IP multicast address)
 
-### IGMP—Internet Group Management Protocol 互联网组管理协议
+---
 
-Group membership communication between hosts and multicast routers
+* 32:1 重叠
+* 尽管缺少接收过程，IP仍可能接收组播
+* IP层必须能够进行过滤（基于IP组播地址）
+
+### IGMP—Internet Group Management Protocol 互联网组管理协议 v1, v2, v3
+
+**Group membership** communication between hosts and multicast routers, not for routing of multicast packets
 
 #### Position of IGMP in TCP/IP
 
+Network Layer, Encapsulated in IP (like ICMP) 
+
 #### IGMPv2 Messages
 
-Position of IGMP in TCP/I
+General membership query: Sent regularly by **routers** to query all membership
+Specific membership query: Sent by **routers** to query specific group membership
+Membership report: Sent by **hosts** to report joined groups
+Leave group: Sent by **hosts** to leave groups
 
 #### Host Behaviour and Dynamics
 
-#### v3
+A process joins a multicast group on a given interface
+* Host sends IGMP report to group address when first process joins a group.
+– Host keeps a table of all groups which have a reference count > 0
+* Host sends IGMP Leave to 224.0.0.2 when last process leaves group
+– In IGMPv1 hosts did not send explicit leaves
+* Router sends IGMP queries to 224.0.0.1 at regular intervals.
+– general query: group = 0.0.0.0
+– specific group query: group = multicast address of the group
+* Host responds to IGMP query by sending IGMP report to group address
+– Hosts snoop for other hosts’ reports
+– Set random timer Suppress if other host on same segment sends it
+
+#### IGMPv3
+
+Enables: Source specific multicast 
+
+A host can join a group and specific sender:
+
+    (S, G) not only (*, G)
+
+This may allow for pruning of certain senders
+
+IGMPv3 is not commonly deployed
 
 #### Multicast Router
 
 Listens to all multicast traffic and forwards if necessary. 
 
-Multicast router listens to all multicast addresses.
+Multicast router listens to **all** multicast addresses.
 
-The network replicates the packets—not the hosts
+* Ethernet: 2^23 link layer multicast addresses
+* Listens promiscuously 混杂侦听 to all LAN multicast traffic  
+
+Communicates with directly connected hosts: via **IGMP**
+
+Communicates with other multicast routers: **multicast**
+**routing protocols**
+
+The **network** replicates the packets—not the hosts
 
 **Multicast is not Multiple Unicast** 多个单播
 
-#### Delivery Trees
+#### Multicast Delivery Trees 多播分发树
 
-Build a **delivery tree** through a network
+A tree structure, described multicast packets route from the sender to receivers. The sender is a root of the tree, and receivers are leaves. Build a **delivery tree** through a network: 
 
-Source Based Trees vs. Group Shared Trees
+**Source Based Trees vs. Group Shared Trees**
+
+**Source Based Trees (DVMRP MOSPF PIM-DM)**
+
+* Each router needs to have one shortest path tree for each group
+* Notation: (S, G)
+* Uses more memory (O(S*G)), but can give optimal paths and delay
+
+**Group Shared Trees (CBT PIM-SM)**
+
+* One router (center core or renedevous router) is responsible for distributing multicast traffic
+* Other routers encapsulates multicast packets in unicast packets and send them to the rendevous point for multicast distribution
+* Notation: (*, G)
+* Uses less memory (O(G)) but suboptimal paths and delays
+
+---
+基于源的树
+* 每个路由器需要为每个组拥有一棵最短路径树
+* 符号：(S, G)
+* 使用更多内存 (O(S*G))，但可以提供最佳路径和延迟
+
+组共享树
+
+* 一台路由器（中心核心或独立路由器）负责分发组播流量
+* 其他路由器将组播报文封装在单播报文中，发送到汇聚点进行组播分发
+* 符号：(*, G)
+* 使用较少的内存 (O(G))，但路径和延迟不是最优的
 
 **Distance-Vector Multicast Routing Protocol - DVMRP**
 
-**Reverse Path Forwarding (RPF)**
+* Based on unicast distance vector (e.g., RIP)
+* Routers do not know network topology apart from closest neighbour
+* Create multicast routing table by using information from the unicast distance vector tables
+* Extend (Destination, Cost, Nexthop) ->  (Group, Cost, Nexthops)
 
-Forward a multicast datagram only if it arrives on the interface that would be  used to send unicast to the source - Flooding!
+DVMRP is **data-driven and uses source-based trees**
 
-Make a lookup of the source address in the FIB
+DVMRP uses **Reverse Path Multicasting (RPM)** 
+
+---
+
+* 基于单播距离向量（例如，RIP）
+* 路由器不知道除了最近邻居之外的网络拓扑
+* 使用单播距离向量表中的信息创建多播路由表
+* 扩展（目的地、成本、下一跳） -> （组、成本、下一跳）
+
+DVMRP 是**数据驱动的并使用基于源的树**
+
+DVMRP 使用逆向路径多播 (RPM)
+
+**Reverse Path Forwarding (RPF) 逆向转发**
+
+Forward a multicast datagram only if it arrives on the interface that would be  used to send unicast to the source - Send out on all other interfaces - Flooding!
+
+仅当多播数据报到达用于向源发送单播的那个接口时，才转发多播数据报 - 至其余所有端口 - 洪泛
+
+Make a lookup of the source address in the FIB 转发信息表
 
 only shortest path packet forwarded
 
-**Reverse Path Multicasting (RPM)** 
+**Reverse Path Multicasting (RPM) 逆向路径多播** 
 
 RPM refines RPF as follows
 
@@ -471,14 +604,29 @@ Flooding 洪泛 (Build the tree)
 Pruning 剪枝 (Cut the tree)
 * Prune networks that do not have members
 * IGMP leave (or timeout)
-* **Propagate prune messages up the shortest path tree.**
+* **Propagate prune messages up the shortest path tree**
 
 Grafting 嫁接 (Add a branch to the tree)
 * Add a network with a listener
 * IGMP join
 * **Propagate graft messages up the shortest path tree**
 
-**Link-State Multicast: MOSPF**
+---
+
+洪泛（植树）
+* 第一个数据包广播到每个网络
+
+剪枝（砍树）
+* 修剪没有成员的网络
+* IGMP离开（或超时）
+* **沿着最短路径树传播剪枝消息**
+
+Grafting 嫁接（在树上添加一根树枝）
+* 添加一个带有监听器的网络
+* IGMP加入
+* **沿最短路径树向上传播嫁接消息**
+
+**Link-State Multicast: MOSPF 开放最短路优先的多播扩展**
 
 **Add multicast to a given link-state routing protocol**
 
@@ -493,13 +641,63 @@ Uses the link-state database in OSPF to build delivery trees
 
 Expensive to keep all this information
 * Cache active (S,G) pairs 
-* MOSPF is Data-driven: computes Dijkstra when datagram arrive
+* MOSPF is **Data-driven**: computes Dijkstra when datagram arrive
 
-#### Core Based Tree—CBT
+#### Core Based Tree—CBT 基于核心树
+
+**Group shared** multicast trees—(*, G)
+
+**Demand-driven**
+
+Routers send join messages when hosts join groups
+Divide the Internet into regions where each region has a core router
+When a host joins a multicast group the nearest multicast router attaches to the forwarding tree by sending a join request towards its core router
+Multicast datagrams to the core router are encapsulated in unicast datagrams
+
+---
+
+当主机加入组时，路由器发送加入消息
+将互联网划分为多个区域，每个区域都有一个核心路由器
+当主机加入多播组时，最近的多播路由器通过向其核心路由器发送加入请求来连接到转发树
+发送到核心路由器的组播数据报被封装在单播数据报中
 
 #### Protocol Independent Multicasting—PIM
 
-#### Multicast Source Discovery Protocol MSDP
+PIM-DM (dense mode)
+
+* For dense multicast environment, like a LAN
+* Uses RPF and pruning/grafting strategies—similar to DVMRP
+  * Source-based tree
+* Does not depend on a specific unicast protocol
+* Relies on (any) correct unicast routing tables
+
+PIM-SM (sparse mode)
+
+* For non-broadcast environment (routers involved)
+* Demand driven similar to CBT
+  * uses **rendezvous points (RPs)** instead of core routers
+* Extends CBT in that a router may know of more than one rendezvous point
+* Can build both shared and source distribution trees
+
+---
+
+PIM-DM（密集模式）
+
+* 适用于密集组播环境，如 LAN 局域网
+* 使用 RPF 和剪枝/嫁接策略 - 类似于 DVMRP
+   * 基于源的树
+* 不依赖于特定的单播协议
+* 依赖于（任何）正确的单播路由表
+
+PIM-SM（稀疏模式）
+
+* 针对非广播环境（涉及路由器）
+* 类似于 CBT 的需求驱动
+   * 使用**会合点 (RP)** 代替核心路由器
+* 扩展 CBT，使路由器可以知道多个会合点
+* 可以构建共享树和源分发树
+
+#### Multicast Source Discovery Protocol, MSDP **多播源发现协议**
 
 Interconnects multiple PIM-SM domains
 * Enables rendevous-point (RP) redundancy
@@ -514,36 +712,67 @@ Drawbacks:
   * Info must be passed about all these pairs
 * Configuration-intensive (many tunnels needed)
 
+---
+
+多个PIM-SM域互联
+* 启用会合点 (RP) 冗余
+* 启用域间组播
+
+不同域内的RP之间可以配置隧道
+* RP 互相讲 MSDP
+* 足够多的隧道，即使 RP 发生故障也能保持连接
+
+缺点：
+* 扩展问题——许多（S，G）对可以在互联网上活跃
+   * 必须传递所有这些对的信息
+* 配置密集（需要许多隧道）
+
 used in KTH Kista
 
-#### MBGP
+#### MBGP 边界网关协议的多播扩展
 
-### Tunneling
+Solves part of the inter-domain problem
+
+Standard BGP configuration facilities
+
+* Extends the BGP multiprotocol attributes
+* Exchange multicast routing information
+* Policies, capabilities,
+
+Must still use, for example, PIM to build distribution trees and forward multicast traffic
+
+**Tunneling**
 
 can use tunneling over non-multicast enabled sub-nets
 
 Multicast BackBONE 
 
-### Deployment
+**Deployment**
 
-Multicast routing is in general not deployed in the current networks
-Some sites (e.g., metropolitan area networks) have deployed local multicast delivery
+Multicast routing is in general **not** deployed in the current networks
 
-* Cable TV distribution
+Some sites (e.g., metropolitan area networks) have deployed local multicast delivery： Cable TV distribution
+
 IP multicast is slowly gaining acceptance
 
 ### Summary
 
-Multicast routing uses network resources more efficiently than unicast emulation IP multicast
+Multicast routing uses network resources more efficiently than unicast emulation
+
+IP multicast
+
 * Receiver-based
 * Best effort delivery
 
 Multicast routing protocols
-* DVMRP, MOSPF, CBT, PIM, MBGP
+* **DVMRP, MOSPF, CBT, PIM, MBGP**
 
 Source-based trees vs shared group trees
+
 Demand-driven vs Data-driven trees
+
 Reverse Path Forwarding (RPF)
+
 Reverse Path Multicasting (RPM)
 
 ## 2023-09-07 Project Introduction
@@ -600,7 +829,7 @@ $$
 
 **Fairness in TCP: Multiple flows with same RTT sharing same link should get same bandwidth**
 
-TCP is AIMD, with gentle ↑ aggressive ↓, converges to fairness
+TCP is **AIMD 加增倍减**, with gentle ↑ aggressive ↓, converges to fairness
 
 #### router buffer size impact T
 
@@ -624,7 +853,7 @@ try to return to W_max ASAP, converging faster
 
 ([slides-101-iccrg-an-update-on-bbr-work-at-google-00 (ietf.org)](https://datatracker.ietf.org/meeting/101/materials/slides-101-iccrg-an-update-on-bbr-work-at-google-00))
 
-### TCP + TLS (Transport Layer Security)
+### TCP + TLS (Transport Layer Security 传输层安全性协议，原SSL 安全套接层，工作于应用层)
 
 problems with TCP and TCP + TLS and HTTP 1.1, HTTP 2
 
