@@ -473,7 +473,12 @@ IP to Ethernet multicast address mapping is **not unique**!
 
 #### Position of IGMP in TCP/IP
 
-Network Layer, Encapsulated in IP (like ICMP) 
+Network Layer, **Encapsulated in IP** (like ICMP) 
+
+always addressed to a multicast address
+
+* often **all systems (224.0.0.1), all routers (224.0.0.2)**
+* or to a specific multicast group  
 
 #### IGMPv2 Messages
 
@@ -485,14 +490,14 @@ Leave group: Sent by **hosts** to leave groups
 #### Host Behaviour and Dynamics
 
 A process joins a multicast group on a given interface
-* Host sends IGMP report to group address when first process joins a group.
+* **Host sends IGMP report to group address when first process joins a group.**
 – Host keeps a table of all groups which have a reference count > 0
-* Host sends IGMP Leave to 224.0.0.2 when last process leaves group
+* **Host sends IGMP Leave to 224.0.0.2 when last process leaves group**
 – In IGMPv1 hosts did not send explicit leaves
-* Router sends IGMP queries to 224.0.0.1 at regular intervals.
+* **Router sends IGMP queries to 224.0.0.1 at regular intervals.**
 – general query: group = 0.0.0.0
 – specific group query: group = multicast address of the group
-* Host responds to IGMP query by sending IGMP report to group address
+* **Host responds to IGMP query by sending IGMP report** to group address
 – Hosts snoop for other hosts’ reports
 – Set random timer Suppress if other host on same segment sends it
 
@@ -540,7 +545,7 @@ A tree structure, described multicast packets route from the sender to receivers
 
 **Group Shared Trees (CBT PIM-SM)**
 
-* One router (center core or renedevous router) is responsible for distributing multicast traffic
+* One router (**center core or renedevous router**) is responsible for distributing multicast traffic
 * Other routers encapsulates multicast packets in unicast packets and send them to the rendevous point for multicast distribution
 * Notation: (*, G)
 * Uses less memory (O(G)) but suboptimal paths and delays
@@ -554,7 +559,7 @@ A tree structure, described multicast packets route from the sender to receivers
 组共享树
 
 * 一台路由器（中心核心或独立路由器）负责分发组播流量
-* 其他路由器将组播报文封装在单播报文中，发送到汇聚点进行组播分发
+* 其他路由器将组播报文封装在单播报文中，发送到会合点进行组播分发
 * 符号：(*, G)
 * 使用较少的内存 (O(G))，但路径和延迟不是最优的
 
@@ -582,9 +587,9 @@ DVMRP 使用逆向路径多播 (RPM)
 
 **Reverse Path Forwarding (RPF) 逆向转发**
 
-Forward a multicast datagram only if it arrives on the interface that would be  used to send unicast to the source - Send out on all other interfaces - Flooding!
+Forward a multicast datagram only if it arrives on the interface that would be used to send unicast to the source - Send out on all other interfaces - Flooding!
 
-仅当多播数据报到达用于向源发送单播的那个接口时，才转发多播数据报 - 至其余所有端口 - 洪泛
+仅当多播数据报到达用于向源发送单播的**那个**端口时，才转发多播数据报 - 至其余所有端口 - 洪泛
 
 Make a lookup of the source address in the FIB 转发信息表
 
@@ -656,7 +661,7 @@ Multicast datagrams to the core router are encapsulated in unicast datagrams
 
 ---
 
-当主机加入组时，路由器发送加入消息
+当主机加入组时，路由器发送**加入**消息
 将互联网划分为多个区域，每个区域都有一个核心路由器
 当主机加入多播组时，最近的多播路由器通过向其核心路由器发送加入请求来连接到转发树
 发送到核心路由器的组播数据报被封装在单播数据报中
@@ -788,7 +793,7 @@ http://ik2215.ssvl.kth.se/
 Support communication between applications:
 * **need** a way to distinguish between applications’ packets (**mux/demux （解）复用**)
 * may offer **reliable service**
-* may **dictate the transmission rate** of packets, like **congestion control**
+* may **dictate the transmission rate** of packets, like **congestion control 拥塞控制**
 * may offer **encrypted communication**
 
 #### Connectionless communication
@@ -857,20 +862,23 @@ try to return to W_max ASAP, converging faster
 
 problems with TCP and TCP + TLS and HTTP 1.1, HTTP 2
 
-#### QUIC
+...
+
+#### QUIC: Quick UDP Internet Connections 
 
 > paper: Yong Cui et al. ”Innovating Transport with QUIC: Design  Approaches and Research Challenges ”. In IEEE Internet Computing
 
 QUIC ideas were already proposed in the past:
-* encryption is based on TLS 1.3
-* 0-RTT connection similar of TCP Fast Open
-* stream multiplexing similar of SCTP, SST, …
+* **encryption** is based on TLS 1.3
+* **0-RTT connection** similar of TCP Fast Open
+* **stream multiplexing** similar of **SCTP 流控传输协议, SST 结构化流传输**, …
 QUIC key ideas on deplayability and evolvability:
-* build over UDP (pass through middleboxes, userspace
-implementation). There exists BBR open source over QUIC
+* build over UDP (pass through middleboxes, userspace implementation). There exists BBR open source over QUIC
 * mostly encrypted headers (avoids “network ossification”)
 
 ### Optional: buffers on the receiver host
+
+
 
 ## 2023-09-13 P2P Network 对等网
 
@@ -879,40 +887,78 @@ implementation). There exists BBR open source over QUIC
 Client-Server Architecture
 
 time to distribute File to N clients using client-server approach
+
 $$
 D_{C-S}\ge \max \{\frac{NF}{u_S}, \frac{F}{d_{min}}\}\\
 D_{p2p}\ge \max \{\frac{F}{u_S}, \frac{F}{d_{min}}, \frac{NF}{u_S+\sum u_i}\}\\
 u_S=server\ upload\ rate,\ d_{min} = min\ client\ download\ rate
 $$
+
 **Pure P2P is highly scalable but difficult to manage**
-
-
-
-Locating and distributing content Gnutella Query Flooding
-
-### Distributed Hash Table—DHT
-
-Hash functions are **stateless load balancers**
 
 #### Operation
 
-Static: localization, distribution
+Mapping keys and resources to IP addresses, key -> number
 
-Dynamic: joining, leaving
+**Static: localization, distribution**
 
-#### e.g. Chord DHT Developed at MIT
+**Dynamic: joining, leaving**
+
+#### e.g. Centralized Directory: Napster
+
+file transfer is decentralized, but locating content is highly centralized
+
+**O(N) memory**
+
+#### e.g. Gnutella Protocol
+
+Gnutella Query Flooding
+
+**O(N) communication overhead**
+
+Issue: Can ”see” only local content. Some content invisible to a node.
+
+#### e.g. Hierarchical Overlay Network
+
+Each peer is either a group leader or assigned to a group leader
+
+TCP connection between peer and its group leader; between some pairs of group leaders (overlay)  
+
+Flooding limited to overlay of super peers
+
+#### e.g. Distributed Hash Table—DHT 分布式散列表
 
 > Stoica et al. ”Chord: A Scalable Peer-to-peer Lookup Service for  Internet Applications”. In SIGCOMM 2001, doi http://nms.csail.mit.edu/papers/chord.pdf
 
-**Finger tables** keep log(n) successors at increasing distances
+Hash functions are **stateless load balancers**, giving most likely a fairly uniform (not perfect) load balance. Widely adopted in P2P systems.
 
-closest smaller peer
+Creates a fully decentralized index that maps file IDs to locations; Allows a user to determine the location of a file, without generating an excessive amount of search traffic
+
+**Locating and distributing content**
+
+##### Chord DHT, Developed at MIT
+
+**operations: insert(id, item); lookup(id)** 
+
+m=160, assume =O(logN), hash() return id: [0, 2^m-1]
+
+Each peer has **authority over its id and all the smaller ones until its predecessor peer 自身及至前驱对等点（不含）的那些区间id的权限; a pointer to its successor 后继**
+
+**Routing**: simple algorithm 1, 2, and **Finger tables** keep log(n) successors at increasing distances: 
+
+Peer k stores information about peer authority
+
+$$
+k + 2^i \mod 2^m,\ i=0,...,m-1
+$$
+
+closest smaller peer 最近的偏小对等点
 
 **Routing with finger tables**
 
 Each node stores a subset of successors: **O(log N) memory**
 
-The search space is halved at each hop: **O(log N) communication**
+The search space is halved at each hop: **O(log N) communication overhead**
 
 **More robust**: unless the authority peer of the key ID fails, lookup operations work correctly
 
@@ -927,29 +973,36 @@ The search space is halved at each hop: **O(log N) communication**
    3. safe to move resource mapping
    4. trigger finger tables update
 
-*Theorem.* The communication overhead  for updating all the tables is $O(log^2 N)$ on average
+*Theorem.* The communication overhead for updating all the tables is $O(log^2 N)$ on average
 
 #### Optional: P2P file distribution: BitTorrent
 
 Optional: Optional: Free-Riding Peer: downloading files from the system without ploading, A common problem in peer-to-peer file sharing.
 
-BitTorrent trading algorithm reduces free-riding
+Optional: Free-Riding: BitTorrent trading algorithm reduces free-riding
 
 #### Peer-to-peer Internet Telephony—Skype
+
+Unclear
 
 #### Bitcoin: peer-to-peer payments
 
 Requirements for a P2P payment systems:
-* tamper-proof persistence
-* transaction consistency (no double spending)
-* requires reaching some sort of consensus
+* **tamper-proof persistence**
+* **transaction consistency** (no double spending)
+  * requires reaching some sort of consensus
 
 DHT (e.g., Chord) is not suited for this task:
 
-* malicious users may alter or remove data
+* **malicious** users may alter or remove data
 
 Solution:
 
 * ”proof-of-work” consensus
 
 #### The Inter-Planetary File System (IPFS)
+
+## 2023-09-18 Partial Exam A-1
+
+## 2023-09-21
+

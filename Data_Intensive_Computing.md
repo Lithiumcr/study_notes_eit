@@ -824,3 +824,44 @@ DataSet, Structured Data Execution
 
 
 
+
+
+## 2023-09-18 Structured data processing
+
+Structured data
+
+distributed table-like collections with well-defined rows and columns.
+
+They represent **immutable lazily** evaluated plans
+
+### Spark DataFrame
+
+Schema
+
+Column
+
+Row, record of data, stored distributed, does not have schema
+
+Creating a DataFrame: 
+
+from RDD, `toDF`
+
+from raw data sources
+
+#### DF Transformations
+
+Add, remove, transform row <-> column, change order
+
+aggregate 
+
+group by
+
+windowing
+
+...
+
+SQL in sparkSession
+
+### Spark DataSet
+
+more complex and strongly typed transformations
