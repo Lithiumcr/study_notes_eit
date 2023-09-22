@@ -178,7 +178,7 @@ System interface
 * 在任何时候，对于每个块最多有一台服务器是一级。
 * Master 选择一个 chunkserver 并授予它租用lease一个 chunk。
 * chunkserver在获得租约后将其保留一段时间T，在此期间充当一级。
-* master 在一段时间内没有收到一级 chunkserver 的消息，将把租约交给其他人。
+* master 在一段时间内没有收到一级 chunkserver 的报文，将把租约交给其他人。
 
 #### Write Operation
 
@@ -865,3 +865,165 @@ SQL in sparkSession
 ### Spark DataSet
 
 more complex and strongly typed transformations
+
+
+
+## 2023-09-20 Data stream processing
+
+### Definition
+
+the act of continuously incorporating new data to compute a result  
+
+Database Management Systems (DBMS): data-at-rest analytics. (Store and index data before processing it; Process data only when explicitly asked by the users.)
+
+**Stream Processing Systems (SPS): data-in-motion analytics**, Processing information as it flows, without storing them persistently
+
+* Data stream is unbound data, which is broken into a sequence of individual tuples.
+
+* A data tuple is the atomic data item in a data stream.
+* Can be structured, semi-structured, and unstructured.
+
+Micro-batch systems
+
+Continuous processing-based systems
+
+### Event and Processing Time
+
+**Window**: a buffer associated with an input port to retain previously received tuples
+
+**windowing management policies**
+
+* Count-based policy: the maximum number of tuples a window buffer can hold
+* Time-based policy: based on processing or event time period  
+
+**types of windows**: tumbling & sliding
+
+Tumbling: supports batch operations. When the buffer fills up, all the tuples are evicted  
+
+Sliding: supports incremental operations. When the buffer fills up, older tuples are evicted
+
+*def.* Event time: the time at which **events actually occurred**. Timestamps inserted into each record at the source.
+
+Prcosseing time: the time when the record is **received at the streaming application**.
+
+Skew
+
+Triggering determines when in processing time the results of groupings are emitted
+as panes; Windowing determines where in event time data are grouped together for processing. Time-based or data-driven triggers.
+
+#### Time-based Triggering (Processing Time) 
+
+The system buffers up incoming data into windows until some amount of processing
+time has passed.
+
+Reflect the times at which events actually happened while Handling out-of-order events  
+
+* Watermarking helps a stream processing system to deal with lateness.
+* Watermarks flow as part of the data stream and carry a timestamp t.
+* A watermark is a threshold to specify how long the system waits for late events. 
+* Streaming systems uses watermarks to measure progress in event time.
+* A **W(t) declares that event time has reached time t in that stream**
+  * There **should be no more elements from the stream with timestamp t' ≤ t**.
+* It is possible that certain elements will violate the watermark condition.
+  * After the W(t) has occurred, more elements with timestamp t' ≤ t will occur.
+* If an arriving event lies within the watermark, it gets used to update a query.
+* Streaming programs may explicitly expect some **late elements**  
+
+#### Windowing and Triggering - Example
+
+**Trigger at period (time-based triggers) / Trigger at count (data-driven triggers)** 
+
+Fixed window, trigger at **period** (micro-batch) / Fixed window, trigger at **watermark** (streaming)
+
+### Data Stream Storage
+
+Messaging systems: notify consumers about new events
+
+#### Direct messaging
+
+* Necessary in **latency critical** applications (e.g., remote surgery).
+* A producer sends a message containing the event, which is pushed to consumers. 推流
+* Both consumers and producers have to be online at the same time.
+
+#### Message brokers  
+
+* message broker **decouples** the producer-consumer interaction.
+* It runs as a **server**, with producers and consumers connecting to it as clients.
+* Producers write messages to the **broker**, and consumers receive them by reading them from the broker.  
+* Consumers are generally asynchronous.
+
+#### Partitioned logs
+
+* In typical message brokers, once a message is consumed, it is deleted.
+* Log-based message brokers durably store all events in a sequential log.
+* A log is an append-only sequence of records on disk.
+* A producer sends a message by appending it to the end of the log.
+* A consumer receives messages by reading the log sequentially.
+
+---
+
+* 在典型的报文代理中，一旦报文被消费就会被删除。
+* 基于日志的报文代理将所有事件持久存储在顺序日志中。
+* 日志是磁盘上仅可附加写入的记录序列。
+* 生产者通过将报文附加到日志末尾来发送报文。
+* 消费者通过顺序读取日志来接收报文。
+
+#### Kafka - A Log-Based Message Broker
+
+distributed, topic oriented, partitioned, replicated commit log service. 
+
+##### Logs, Topics and Partition
+
+* Kafka is about logs.
+* Topics are queues: a stream of messages of a particular type
+* Each message is assigned a sequential id called an offset
+* Topics are logical collections of partitions (the physical files).
+  * Ordered
+  * Append only
+  * Immutable
+* Ordering is only guaranteed within a partition for a topic.
+* Messages sent by a producer to a particular topic partition will be appended in the order they are sent.
+* A consumer instance sees messages in the order they are stored in the log.
+* Partitions of a topic are replicated: fault-tolerance
+* A broker contains some of the partitions for a topic.
+* One broker is the leader of a partition: all writes and reads must go to the leader
+
+---
+
+* 卡夫卡是围绕日志的。
+* Topic 主题是队列：特定类型的报文流
+  * 每条报文都分配一个顺序 ID，称为偏置
+* 主题是分区（物理文件）的逻辑集合。
+   * 有序
+   * 仅追加写入
+   * 不可变更
+* 仅保证主题分区内的排序。
+* 生产者发送到特定主题分区的报文保持发送时的顺序。
+* 消费者实例查看报文的顺序是报文在日志中存储的顺序。
+* 主题分区有备份：容错
+* broker 代理包含某个主题的一些分区。
+* 一个broker是一个分区的领导leader：所有的写入和读取都必须到leader
+
+##### Kafka Architecture
+
+Coordination
+
+Kafka uses Zookeeper for the following tasks:
+
+Detecting the addition and the removal of brokers and consumers.
+
+Keeping track of the consumed offset of each partition.
+
+##### State in Kafka
+
+**Brokers are sateless**: no metadata for consumers-producers in brokers.
+
+Consumers are responsible for keeping track of **offsets**.
+
+Messages in queues **expire** based on pre-configured **time periods** (e.g., once a day).  
+
+Kafka guarantees that **messages from a single partition are delivered to a consumer in order**. **at-least-once**
+
+### Summary
+
+## 2023-09-22 

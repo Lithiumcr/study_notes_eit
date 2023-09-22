@@ -1004,5 +1004,271 @@ Solution:
 
 ## 2023-09-18 Partial Exam A-1
 
-## 2023-09-21
+## 2023-09-21 GUDP Intro
 
+## 2023-09-22 Multimedia 多媒体
+
+### Service requirements
+
+Multimedia applications are
+* Sensitive to end-to-end delay
+* Sensitive to delay variation (delay jitter)
+* Less sensitive to occasional loss of data
+  * Network could make performance guarantees to applications
+* Quality of service and Class of service
+
+#### Streaming Stored Audio/Video
+
+Multimedia Applications: Streaming. Download-and-then-play applications not covered today
+
+Three key features for this class of applications
+
+* Stored media
+* Streaming
+* Continuous playout
+* Once playout begins, original timing should be preserved
+  * Delays can be tolerated (several seconds may be OK)
+
+#### Real-Time Interactive Audio/Video
+
+Delay should not be more than a few hundred  milliseconds
+
+#### Multimedia in Today’s InternetIP gives a best-effort service
+Changes to the Internet service model have been proposed
+
+* Integrated services with bandwidth guarantees (intserv)
+* Differentiated services with service classes (diffserv)
+* Intserv and diffserv have not been widely deployed!
+
+What can we do then?
+
+* Tricks ot improve user-perceived quality
+* Send audio/video over UDP
+* Delay playback at the receiver to diminish network-induced delay jitter
+* Timestamp packets at the sender
+* Prefetch data during playback
+* Send redundant information to compensate for packet loss
+
+---
+
+* 提高用户感知质量的技巧
+* 通过UDP发送音频/视频
+* 在接收器处延迟播放以减少网络引起的延迟抖动
+* 发送方的时间戳数据包
+* 播放时预取数据
+* 发送冗余信息以补偿丢包
+
+### Servers for Stored Streaming Audio/Video
+
+Special streaming servers tailored for audio/video streaming applications
+
+Both TCP and UDP can be used but TCP most common
+
+* Firewalls often block UDP traffic
+* Reliable delivery -> entire file transferred OK -> allows for caching
+
+User interactivity can be provided (pause/resume etc) via Real-Time Streaming Protocol (RTSP)
+
+**Web client used for requesting audio/video streaming;** 
+**Media Player used for display and control of audio/video**
+
+* Windows Media Player, Flash Player
+* Decompress audio/video, remove packet jitter
+
+---
+
+专为音频/视频流应用量身定制的特殊流媒体服务器
+
+TCP 和 UDP 都可以使用，但 TCP 最常用
+
+* 防火墙经常阻止 UDP 流量
+* 可靠传输 -> 整个文件传输正常 -> 允许缓存
+
+可以通过**实时流协议 (RTSP)** 提供用户交互性（暂停/恢复等）
+
+**Web 客户端用于请求音频/视频流；媒体播放器用于音频/视频的显示和控制**
+
+* Windows 媒体播放器、Flash 播放器
+* 解压音频/视频，消除数据包抖动
+
+#### Multimedia from Web Server
+
+#### Streaming Server—Delivering Data
+
+Many options for delivering audio/video, Send over UDP at a constant rate equal to the drain rate at the receiver
+
+* Server clocks out data and client plays out as soon as data is decompressed
+
+Same as above, but with delayed playback
+
+* Eliminate network-induced jitter
+* Will look more closely into this soon...
+
+Send over TCP
+
+* Place data in media player buffer, delayed playback
+* TCP congestion control may lead to starvation (empty buffer)
+
+### Real-Time Streaming Protocol (RTSP) 实时流协议
+
+Protocol for exchanging playback control information
+
+* Pausing, repositioning to future/past time, fast-forward, rewinding...
+
+RTSP does not: 
+
+* Define compression schemes
+* Define how to encapsulate audio/video in packets (Done by e.g., RTP or some proprietary protocol)
+* Restrict how streamed media is transported
+* Restrict how the media player buffers audio/video (Up to the media player)
+
+RTSP allows media player to control stream transmission
+
+**Out-of-band protocol 带外协议 (port 554)**
+
+* Media stream is sent ”in-band”  (other port), not defined by RTSP
+* RTSP can use either UDP or TCP for its messages
+
+Server keeps track of client’s state (session#, sequence#)
+
+#### Delay Jitter
+
+gap between neighbor packets arrivals
+
+**Playback Buffers**
+
+Variable rate in -> [Playback point] -> Fixed rate out
+
+The playback buffer absorbs jitter in the network
+
+* Predetermined threshold
+* The maximum jitter allowed
+* Packets coming later are dropped
+* All packets are delayed by this amount at the receiver
+* Tradeoff: packet loss vs. low latency
+
+The playback point can be made adaptive
+
+---
+
+播放缓冲区吸收网络中的抖动
+
+* 预定阈值
+* 允许的最大抖动
+* 稍后到来的数据包将被丢弃
+* 所有数据包在接收方都会延迟此量
+* **权衡：丢包与低延迟**
+
+播放点可以设为自适应
+
+### RTP: Real-time Transport Protocol
+
+Designed to carry out variety of real-time data: e.g., audio and video.
+Sequence number for receiver to detect out-of-order delivery
+Timestamp allowing receiver to control playback
+Typically run on top of UDP, No mechanisms to ensure timely delivery, Just provides the mechanisms to build a real-time service
+
+---
+
+设计用于执行各种实时数据：如音频和视频。
+序列号用于接收方检测无序交付
+时间戳允许接收者控制播放
+通常运行在UDP之上，没有确保及时交付的机制，只是提供构建实时服务的机制
+
+#### RTP Example
+
+#### Recovering from Packet Loss
+
+Packet considered lost if it arrives after its scheduled playout time—no use in retransmitting it
+
+**FEC—Forward Error Correction**
+
+* 1 redundant encoded chunk after every n chunks
+  * Redundant chunk constructed by XOR-ing the n original chunks
+  * If any one packet of the (n+1) chunks is missing, receiver can fully reconstruct the lost packet
+  * Small n: good recovery probability, but large overhead
+
+**Interleaving**
+
+* Sender resequences audio units [1,5,9,13]...[2,6,10,14]...[3,7,11,12]
+* Receiver put units in correct order before playout
+* One lost packet -> multiple small disturbances instead of one large gap
+
+---
+
+如果数据包在预定的播放时间之后到达，则视为丢失 - 重新传输它也没有用
+
+**FEC—前向纠错**
+
+* 每 n 个块之后有 1 个冗余编码块
+   * 通过异或n个原始块构造的冗余块
+   * 如果 (n+1) 个块中的任何一个数据包丢失，接收方可以完全重建丢失的数据包
+   * 较小的n：使得恢复概率高，但开销大
+
+**交错**
+
+* 发送者重排音频单元 [1,5,9,13]...[2,6,10,14]...[3,7,11,12]
+* 接收方在播放前将单元按正序排列
+* 一个数据包丢失 -> 导致多个小干扰而不是一个大间隙（收看体验更好）
+
+### Content Distribution Network
+
+Single server (or server farm) for streaming is problematic
+
+* Large number of geographically distributed users
+* Client may be very far from the server->delay problems, packet loss
+* Popular content -> high bandwidth consumption
+
+Content Distribution Network (CDN)
+
+* Philosophy: bring content closer to the clients
+* Content provider pays a CDN company (such as Akamai) to get its multimedia content to requesting users with the shortest possible delay
+* CDN company installs 100s of CDN servers throughout the Internet
+* CDN company replicates its content provider’s content in CDN servers
+* CDN company provides a mechanism to pick ”best” CDN server for a specific client
+
+---
+
+用于流式传输的单个服务器（或服务器群）是有问题的：
+
+* 大量地理分布的用户
+* 客户端可能距离服务器很远->延迟问题，丢包
+* 热门内容->高带宽消耗
+
+内容分发网络 (CDN)
+
+* 理念：让内容更贴近客户
+* 内容提供商向 CDN 公司（例如 Akamai）付费，以便以尽可能短的延迟将其多媒体内容提供给请求用户
+* CDN公司在整个互联网上安装了数百台CDN服务器
+* CDN公司在CDN服务器中复制其内容提供商的内容
+* CDN公司提供某种机制来为特定客户选择“最佳”CDN服务器
+
+1. Content provider pushes its content to a CDN node
+2. CDN node replicates and pushes content to selected CDN servers
+3. When content provider modifies an object, CDN node immediately replicates the new  object to the CDN servers
+
+#### CDN—How to Find Best Server?
+
+Typically, CDNs use **DNS redirection 重定向** to guide browsers to correct server
+
+Scenario 设想:
+
+* Content provider is www.foo.com, CDN company is cdn.com
+* Content provider wants CDN to distribute video mpeg files
+  * All other objects distributed directly by the content provider
+* URLs of the video files are **prefixed** with http://www.cdn.com, Object is then http://www.cdn.com/www.foo.com/sports/cool.mpg
+* When browser requests page containing cool.mpg：
+  1. Browser requests base HTML object from origin server, Receives reference to www.cdn.com/www.foo.com/sports/cool.mpg
+  2. Browser does DNS lookup 查找 on www.cdn.com
+    1. DNS configured -> query sent to CDNs authoritative DNS server
+    2. Use internal network map to return IP address to best CDN server
+  3. Browser sends HTTP request to the selected CDN serve
+
+Rough idea:
+
+* For every access ISP in the Internet, keep track of the best CDN server for that access ISP
+* Determine the best CDN server based on knowledge
+  * Internet routing tables (specifically BGP tables)
+  * Round-trip time estimates
+  * Other measurement data
+* CDN uses this info to configure the authoritative DNS server
