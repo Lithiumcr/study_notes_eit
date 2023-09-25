@@ -1011,11 +1011,11 @@ Solution:
 ### Service requirements
 
 Multimedia applications are
-* Sensitive to end-to-end delay
-* Sensitive to delay variation (delay jitter)
-* Less sensitive to occasional loss of data
+* Sensitive to end-to-end delay 端到端延迟敏感
+* Sensitive to delay variation (delay jitter) 延变（抖动）敏感
+* Less sensitive to occasional loss of data 偶发丢包较不敏感
   * Network could make performance guarantees to applications
-* Quality of service and Class of service
+* Quality of service and Class of service 服务的质量与等级
 
 #### Streaming Stored Audio/Video
 
@@ -1272,3 +1272,149 @@ Rough idea:
   * Round-trip time estimates
   * Other measurement data
 * CDN uses this info to configure the authoritative DNS server
+
+## 2023-09-25 IoT 物联网
+
+### Overview
+
+Current “standard model”
+
+| Layer | Protocol |
+| ----- | -------- |
+| app   | HTTP, CoAP, MQTT |
+|tran|TCP, UDP|
+|network|IPv6|
+|adaption|6LoWPAN|
+|DL-MAC|CSMA/CA|
+|Radio Duty Cycling|ContikiMAC, TSCH|
+|Radio|IEEE 802.15.4|
+
+#### Application level protocol
+
+##### CoAP: Constrained Application Protocol 受限应用协议
+
+Application protocol for constrained devices 受限设备
+
+Very small footprint, RAM, ROM
+
+URI (Uniform Resource Identifier)
+
+* coap://example.se:5683/~sensors./temp1.xml
+* User-agent/plugin for Firefox Copper (Cu), ETH
+* CoAP implementation: Operating system Contiki-2.6, ETH Zurich
+* Resource Discovery: new feature to find resources (URI)
+* new feature, report without WGET.
+* UDP Port 5683 (mandatory)
+* Reliable unicast
+* Best effort multicast
+
+CoAP Message
+
+* Confirmable message 
+* ACK message
+* Non-confirmable message (No ACK back)
+* Reset message
+* Responses – (Piggy-backed; Separate)
+
+**Publish-Subscribe Model**
+
+Sensor network::Client.push(data) -> Sensor gateway -> Broker -> User::Client.subscribe(data)
+
+##### MQTT: Message Queue Telemetry Transport 消息队列遥测传输
+
+* Invented by Andy Stanford-Clark and Arlen Nipper, IBM, 1999
+* Open source publish/subscribe protocol runs over TCP
+* Data relayed by a broker
+* Devices can publish and subscribe to different ”**topics**”
+  * Wildcard # can be used to subscribe to all
+* Once a topic is updated, subscribers get notified and get data via the broker
+
+**Publish-Subscribe Model**
+
+Sensor network::Client.push(topic) -> Sensor gateway -> Broker -> User::Client.subscribe(topic)
+
+
+### Network level protocol
+
+#### IPv6
+
+Stateless Autoconfiguration (SLAAC) 无状态自动配置
+
+* Initially developed for IPv6, but later designed also for IPv4
+* Server keeps no state about hosts, only non-host state, Like global unicast prefix and subnet prefix
+* Uses IPv6 concept of link local addresses to enable clients to communicate on local subnet before having a global address
+* Client does not explicitly request address from server, Does not even explicitly inform the server of address selected
+
+---
+
+* 最初是为 IPv6 开发的，但后来也供 IPv4
+* 服务器不保留主机状态，仅保留非主机状态，如全局单播前缀和子网前缀
+* 使用 IPv6 链路的本地地址概念，使客户端能够在拥有全局地址之前在本地子网上进行通信
+* 客户端没有明确向服务器请求地址，甚至没有明确告知服务器所选定的地址
+
+An IPv6 unicast address identifies an interface connected to an IP subnet, routinely allows **each interface to be identified by several addresses** to facilitate management
+
+**Colon hexadecimal notation (eight 16 bit hexadecimal integers)**
+
+Once unique LLA is established, this can be used to communicate with other hosts on same subnet; Routers on local subnet broadcast periodic Router Advertisements (RA) ICMP messages
+
+* Hosts can also send an ICMP message to solicit announcements from routers on local subnet
+* RA contains the global unicast prefix and subnet prefix Client combines LLA with prefixes to create its unique global address and directly starts using it
+
+#### RPL: IPv6 Routing Protocol for Low-Power and Lossy Networks
+
+**Routing over Low-power Lossy Networks (LLN)**
+
+* a distance vector protocol
+* Runs in host and routers
+* RPL messages encapsulated in ICMPv6
+* From 10s to thousands of routers
+* Separate routing optimization (power, latency loss etc)
+* via Objective Function (OF) from packet handling. 
+* RPL node often combines host and router
+* OF gives a ”rank” used for tree/parent selection and loop prevention
+  * Rank decreases towards destination
+* RPL is not designed for a specific link layer
+* Typically lossy wireless networks or Power Line Communication (PLC)
+* IPv6 Neighbor Discovery (ND) may by replaced by RPL
+
+---
+
+* 距离矢量协议
+* 在主机和路由器中运行
+* RPL报文封装在ICMPv6中
+* 从 10 个到数千个路由器
+* 分离的路由优化（功率、延迟损失等）
+* 通过数据包处理的目标函数 (OF)。
+* RPL节点通常结合了主机和路由器
+* OF 给出了用于树/父代选择和循环预防的“等级”
+   * 排名向目的地递减
+* RPL不是为特定链路层设计的
+* 通常是有损无线网络或电力线通信 (PLC)
+* IPv6 邻居发现 (ND) 可能被 RPL 取代
+
+**RPL Tree Terminology**
+
+RPL Message Exchange—DODAG Formation
+1. A multicasts DIOs, itself with Rank 0
+2. B, C, D, E receive DIOs and determine their rank (1, 1, 3, 4)
+3. B, C, D, E send DAOs to A
+4. A accepts DAOs
+5. B and C multicast DIOs
+6. D receives DIOs and determines rank is 1, 2
+7. E receives DIOs and determines rank 2, 1
+8. D sends DAO to B; E sens DAO to C
+9. B sends DAO-ACK to D; C sends DAO-ACK to E
+
+### Lower level protocol
+
+#### 6LowPAN
+
+Encapsulation—Stacked Headers
+
+#### IEEE 802.15.4
+
+
+
+
+
