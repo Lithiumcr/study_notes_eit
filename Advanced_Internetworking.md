@@ -27,7 +27,7 @@ Lab ddl: Monday 17:00 sharp, hard
 
 ### Recapitulation
 
-Internet, OSI, protocal stack
+Internet, OSI, **protocol stack**
 
 application-layer message
 
@@ -196,6 +196,12 @@ ICMP—**Internet Control Message Protocol 互联网控制报文协议**
 virtual box VM, lubuntu, Kathara container, Quagga
 
 submit via canvas
+
+You can submit the GUDPSocket.java file for testing here: [vpn5b.lan.kth.se/+CSCO+00756767633A2F2F7678323231352E666669792E7867752E6672++/](https://vpn5b.lan.kth.se/+CSCO+00756767633A2F2F7678323231352E666669792E7867752E6672++/)即[ik2215.ssvl.kth.se](http://ik2215.ssvl.kth.se/).
+
+After the test is completed, the results will be sent as an email to the given KTH account. **KTH account** is the email account without the "@KTH.SE" part.
+
+**GUDPSocket.java** is the only file that you will upload. The test will use other files from the template provided on the course web.
 
 ## 2023-09-04 Routers
 
@@ -880,11 +886,13 @@ QUIC key ideas on deplayability and evolvability:
 
 
 
+
+
 ## 2023-09-13 P2P Network 对等网
 
 ### Application Architecture 应用体系结构
 
-Client-Server Architecture
+**C/S Client-Server Architecture**
 
 time to distribute File to N clients using client-server approach
 
@@ -896,17 +904,19 @@ $$
 
 **Pure P2P is highly scalable but difficult to manage**
 
-#### Operation
+More users = more servers
+
+### Operation
 
 Mapping keys and resources to IP addresses, key -> number
 
-**Static: localization, distribution**
+**Static: locating, distributing 定位、分发**
 
-**Dynamic: joining, leaving**
+**Dynamic: joining, leaving 加入、离开**
 
 #### e.g. Centralized Directory: Napster
 
-file transfer is decentralized, but locating content is highly centralized
+Limitations: file transfer is decentralized, but locating content is highly centralized
 
 **O(N) memory**
 
@@ -918,7 +928,14 @@ Gnutella Query Flooding
 
 Issue: Can ”see” only local content. Some content invisible to a node.
 
-#### e.g. Hierarchical Overlay Network
+#### e.g. Kazaa: Hierarchical Overlay Network
+
+Kazaa borrows ideas from Napster and Gnutella
+
+* Like in Gnutella, there is no dedicated server (or server farm) for tracking and locating content
+  * Unlike Gnutella, all peers are not equal in Kazaa—group leaders (or super peers) exist
+* Group leaders maintain a database of content and IP addresses in a Napsterlike fashion (group leader is a Napster-like hub)
+  * In contrast to Napster, a group leader is not a dedicated server - Could be e.g, in a residence or in a university campus
 
 Each peer is either a group leader or assigned to a group leader
 
@@ -926,25 +943,25 @@ TCP connection between peer and its group leader; between some pairs of group le
 
 Flooding limited to overlay of super peers
 
-#### e.g. Distributed Hash Table—DHT 分布式散列表
+#### e.g. Distributed Hash Table—DHT 分布式散列表（重点）
 
 > Stoica et al. ”Chord: A Scalable Peer-to-peer Lookup Service for  Internet Applications”. In SIGCOMM 2001, doi http://nms.csail.mit.edu/papers/chord.pdf
 
-Hash functions are **stateless load balancers**, giving most likely a fairly uniform (not perfect) load balance. Widely adopted in P2P systems.
-
-Creates a fully decentralized index that maps file IDs to locations; Allows a user to determine the location of a file, without generating an excessive amount of search traffic
+Hash functions are **stateless load balancers**, giving most likely a fairly uniform (not perfect) load balance. **Hash function turns key (e.g., name) into a number which can be used to identify who knows how to retrieve the value associated with the key**, hence widely adopted in P2P systems: Creates a fully decentralized index that maps file IDs to locations; Allows a user to determine the location of a file, without generating an excessive amount of search traffic.
 
 **Locating and distributing content**
 
 ##### Chord DHT, Developed at MIT
 
-**operations: insert(id, item); lookup(id)** 
+**operations: insert(id, item); lookup(id) 插入、查找** 
 
-m=160, assume =O(logN), hash() return id: [0, 2^m-1]
+m(=160), assume =O(logN), hash() return id: **[0, 2^m-1] identifier space 标识符空间**
 
-Each peer has **authority over its id and all the smaller ones until its predecessor peer 自身及至前驱对等点（不含）的那些区间id的权限; a pointer to its successor 后继**
+Each peer has **authority over its id and all the smaller ones until its predecessor peer 有自身及至前驱对等点（不含）的那些区间id的权限; a pointer to its successor 指向后继点的指针**
 
-**Routing**: simple algorithm 1, 2, and **Finger tables** keep log(n) successors at increasing distances: 
+##### Routing with finger tables
+
+simple algorithm 1, 2, and **Finger tables 手指表** keep log(n) successors at increasing distances: 
 
 Peer k stores information about peer authority
 
@@ -952,9 +969,7 @@ $$
 k + 2^i \mod 2^m,\ i=0,...,m-1
 $$
 
-closest smaller peer 最近的偏小对等点
-
-**Routing with finger tables**
+Each peer sends a request to the closest successor peer that precedes or equal the key ID 查找过程中，每步迭代都基于当前最近中介点内层迭代增加2的幂查找键标识符的最近后继点
 
 Each node stores a subset of successors: **O(log N) memory**
 
@@ -962,16 +977,16 @@ The search space is halved at each hop: **O(log N) communication overhead**
 
 **More robust**: unless the authority peer of the key ID fails, lookup operations work correctly
 
-**Joining**
+##### Joining
 
-1. computes its own id
+1. computes its own id 标识符
 2. computes its own finger table
 3. ask any peer who has authority over id
 4. trigger update of others’ tables
    1. without creating anomalies
    2. update succ/pred pointers
    3. safe to move resource mapping
-   4. trigger finger tables update
+   4. trigger finger tables update 只有其手指表的指尖指向 [新节点的前驱点,新节点) 区间的才需要更新（2018A）
 
 *Theorem.* The communication overhead for updating all the tables is $O(log^2 N)$ on average
 
@@ -1015,11 +1030,12 @@ Multimedia applications are
 * Sensitive to delay variation (delay jitter) 延变（抖动）敏感
 * Less sensitive to occasional loss of data 偶发丢包较不敏感
   * Network could make performance guarantees to applications
-* Quality of service and Class of service 服务的质量与等级
 
-#### Streaming Stored Audio/Video
+#### Classes of Multimedia Applications
 
 Multimedia Applications: Streaming. Download-and-then-play applications not covered today
+
+**Streaming Stored Audio/Video**
 
 Three key features for this class of applications
 
@@ -1029,15 +1045,18 @@ Three key features for this class of applications
 * Once playout begins, original timing should be preserved
   * Delays can be tolerated (several seconds may be OK)
 
-#### Real-Time Interactive Audio/Video
+**Streaming Live Audio/Video**
 
-Delay should not be more than a few hundred  milliseconds
+**Real-Time Interactive Audio/Video**
 
-#### Multimedia in Today’s InternetIP gives a best-effort service
-Changes to the Internet service model have been proposed
+Delay should not be more than a few hundred ms
 
-* Integrated services with bandwidth guarantees (intserv)
-* Differentiated services with service classes (diffserv)
+#### Multimedia in Today’s Internet
+
+IP gives a best-effort service; Changes to the Internet service model have been proposed:
+
+* Integrated services with bandwidth guarantees (intserv) 综合服务
+* Differentiated services with service classes (diffserv) 差异服务
 * Intserv and diffserv have not been widely deployed!
 
 What can we do then?
@@ -1062,12 +1081,12 @@ What can we do then?
 
 Special streaming servers tailored for audio/video streaming applications
 
-Both TCP and UDP can be used but TCP most common
+Both TCP and UDP can be used but **TCP most common because:**
 
-* Firewalls often block UDP traffic
-* Reliable delivery -> entire file transferred OK -> allows for caching
+* **Firewalls often block UDP traffic**
+* Reliable delivery -> entire file transferred OK -> **allows for caching**
 
-User interactivity can be provided (pause/resume etc) via Real-Time Streaming Protocol (RTSP)
+User interactivity can be provided (pause/resume etc) via **Real-Time Streaming Protocol (RTSP)**
 
 **Web client used for requesting audio/video streaming;** 
 **Media Player used for display and control of audio/video**
@@ -1086,7 +1105,7 @@ TCP 和 UDP 都可以使用，但 TCP 最常用
 
 可以通过**实时流协议 (RTSP)** 提供用户交互性（暂停/恢复等）
 
-**Web 客户端用于请求音频/视频流；媒体播放器用于音频/视频的显示和控制**
+**Web 客户端用于请求音频/视频流；媒体播放器用于音频/视频的显示和控制**（2017）
 
 * Windows 媒体播放器、Flash 播放器
 * 解压音频/视频，消除数据包抖动
@@ -1177,7 +1196,7 @@ Typically run on top of UDP, No mechanisms to ensure timely delivery, Just provi
 
 #### RTP Example
 
-#### Recovering from Packet Loss
+#### Recovering from Packet Loss 丢包后恢复
 
 Packet considered lost if it arrives after its scheduled playout time—no use in retransmitting it
 
@@ -1211,7 +1230,7 @@ Packet considered lost if it arrives after its scheduled playout time—no use i
 * 接收方在播放前将单元按正序排列
 * 一个数据包丢失 -> 导致多个小干扰而不是一个大间隙（收看体验更好）
 
-### Content Distribution Network
+### Content Distribution Network 内容分发网络
 
 Single server (or server farm) for streaming is problematic
 
@@ -1249,7 +1268,7 @@ Content Distribution Network (CDN)
 
 #### CDN—How to Find Best Server?
 
-Typically, CDNs use **DNS redirection 重定向** to guide browsers to correct server
+Typically, CDNs use **DNS redirection 重定向（2017A）** to guide browsers to correct server
 
 Scenario 设想:
 
@@ -1289,26 +1308,39 @@ Current “standard model”
 |Radio Duty Cycling|ContikiMAC, TSCH|
 |Radio|IEEE 802.15.4|
 
-#### Application level protocol
+### Application level protocol
+
+#### Translate Model
+
+Sensor -> Sensor gateway -> Client
 
 ##### CoAP: Constrained Application Protocol 受限应用协议
 
-Application protocol for constrained devices 受限设备
+Application protocol for constrained devices 受限设备（2017B 2018A）
 
-Very small footprint, RAM, ROM
+**Very small footprint, RAM, ROM**
 
 URI (Uniform Resource Identifier)
 
 * coap://example.se:5683/~sensors./temp1.xml
 * User-agent/plugin for Firefox Copper (Cu), ETH
-* CoAP implementation: Operating system Contiki-2.6, ETH Zurich
-* Resource Discovery: new feature to find resources (URI)
-* new feature, report without WGET.
-* UDP Port 5683 (mandatory)
-* Reliable unicast
-* Best effort multicast
 
-CoAP Message
+CoAP implementation: 
+
+* Operating system Contiki-2.6, ETH Zurich
+
+Resource Discovery: 
+
+* new feature to find resources (URI)
+
+Observe
+
+* new feature, report without WGET.
+* **UDP Port 5683 (mandatory)**
+* **Reliable unicast**
+* **Best effort multicast**
+
+CoAP Message Types
 
 * Confirmable message 
 * ACK message
@@ -1316,15 +1348,17 @@ CoAP Message
 * Reset message
 * Responses – (Piggy-backed; Separate)
 
-**Publish-Subscribe Model**
+CoAP Protocol Header (from RFC)
+
+#### Publish-Subscribe Model (Pub-sub) 发布-订阅模型
 
 Sensor network::Client.push(data) -> Sensor gateway -> Broker -> User::Client.subscribe(data)
 
 ##### MQTT: Message Queue Telemetry Transport 消息队列遥测传输
 
 * Invented by Andy Stanford-Clark and Arlen Nipper, IBM, 1999
-* Open source publish/subscribe protocol runs over TCP
-* Data relayed by a broker
+* **Open source publish/subscribe protocol runs over TCP（也存在使⽤ UDP 的 MQTT-SN 变体）**  
+* Data relayed by a **broker**
 * Devices can publish and subscribe to different ”**topics**”
   * Wildcard # can be used to subscribe to all
 * Once a topic is updated, subscribers get notified and get data via the broker
@@ -1361,7 +1395,7 @@ Once unique LLA is established, this can be used to communicate with other hosts
 * Hosts can also send an ICMP message to solicit announcements from routers on local subnet
 * RA contains the global unicast prefix and subnet prefix Client combines LLA with prefixes to create its unique global address and directly starts using it
 
-#### RPL: IPv6 Routing Protocol for Low-Power and Lossy Networks
+#### RPL: IPv6 Routing Protocol for Low-Power and Lossy Networks 用于低功耗和有损网络的 IPv6 路由协议
 
 **Routing over Low-power Lossy Networks (LLN)**
 
@@ -1408,7 +1442,9 @@ RPL Message Exchange—DODAG Formation
 
 ### Lower level protocol
 
-#### 6LowPAN
+#### 6LowPAN, IPv6 over Low Power Personal Area Networks 低功耗个人区域网络上的 IPv6
+
+to run IPv6 on small constrained **low-power devices**
 
 Encapsulation—Stacked Headers
 
@@ -1416,5 +1452,221 @@ Encapsulation—Stacked Headers
 
 
 
+## 2023-09-26 IPv6 and IP QoS
+
+Changes since IPv4 was developed (mid 70’s)
+
+* Provider market has changed dramatically
+* Immense increase in user and traffic on the Internet
+* Rapid technology advancement
+* Bandwidth increase from kb/s to Tb/s
+
+IPv4 issues
+
+* **Too few addresses**
+* **Too large routing tables**
+
+To address these issuees IETF has standardized IPv6
+
+* IPv6 should keep most of the characteristics of IPv4 (good design)
+* Changing the **address fields** is the big thing with IPv6
+* While modifying the **header**, improvements have been introduced
+
+### IPv6 vs IPv4
+
+* 128 bit addresses
+* extended address hierarchy 扩展地址层次结构
+* simplified header
+* simpler and better support for options
+* possible to extend the protocol
+* support for autoconfiguration (plug-and-play) 自动配置（即插即用）
+* support for QoS treatment
+* host mobility
+* security
+* provider selection
+* no fragmentation in routers
+
+### v6 Header
+
+**4b Version**: Only field identical to IPv4. Code is 6 in IPv6
+**8b Class**: Revised concept of priority bits. Facilitates handling of real-time traffic.
+**20b Flow Label**: To distinguish packets requiring the same treatment.
+**16b Payload Length**: Replaces length field in IPv4. Gives length of data following IPv6 header
+**8b Next Header:** Replaces protocol field in IPv4. Extension headers can be used.
+**8b Hop Limit**: Replaces TTL field in IPv4. **Hop limit more accurately reflects the use of TTL.**
+**128b Src Address**: Revised source address field. 128 bits in IPv6 vs 32 bits in IPv4.
+**128b Dst Address**: Revised destination address field. 128 bits in IPv6 vs 32 bits in IPv4.
 
 
+### v6 Address
+
+**An IPv6 unicast address identifies an interface connected to an IP subnet (as is the case in IPv4)**
+
+One big difference: **IPv6 routinely allows each interface to be identified by several addresses to facilitates management**
+
+IPv6 has **three address categories**:
+
+* unicast - identifies exactly one interface
+* multicast - identifies a group; packets get delivered to all members of the group
+* anycast - identifies a group; packets normally get delivered to the nearest member of the group
+
+128 bits results in **2^128 addresses**
+
+#### Format
+
+**Colon hexadecimal notation (eight 16 bit hexadecimal integers)**
+
+Leading zeros may be oppressed
+
+Zero compression: one of a series of zeros may be replaced  by ::  But only once
+
+#### Network Layer Comparison
+
+ICMPv6 (including ARP, IGMP), RARP dropped
+
+ICMPv6 messages are divided into 2 categories: 
+
+* Error-reporting (somewhat different messages in v6 vs v4)
+
+* Query (rather different messages in v6 vs v4
+
+#### Transition from IPv4 to IPv6
+
+Transition should be smooth to prevent problems
+
+## IP QoS (Quality of Service)
+
+#### Advanced Packet Handling
+
+* Identifying packet flows in the network – **classification**
+* Give special treatment to each flow – higher degree of service than BE
+* After classification packet is placed in a certain queue for an outgoing interface; More specific than the traditional route lookup (dst IP addr and LPM)
+
+Defining a Flow
+
+* To recognize flows in the network, classification information is needed
+* This information typically includes src/dst IP addresses and src/dst port numbers
+* Routers along the path examines both IP and transport level headers to identify the flows
+
+Functions in IP QoS: 
+
+分类、安保、（突发流量）塑形、调度、准入管控
+
+Two approaches by IETF for IP QoS:
+
+**Integrated services (int-serv)**
+
+* QoS architecture produced by IETF in the mid 1990s
+* End-to-end guarantees for applications
+* Uses a signaling protocol, RSVP, to make requests for QoS
+* Includes service class definitions
+
+**Differentiated services (diff-serv)**
+
+* Introduced by IETF in the late 1990s
+* More coarse-grained model of QoS
+* Allocates resources on a per class basis
+
+### Integrated Services (int-serv) 综合服务
+
+#### Token Bucket 令牌桶
+
+Token bucket specification is a standard way to represent the bandwidth characteristics of an application that generates data at variable rate
+A traffic flow is characterized by a token bucket of rate r and burst size b, if for any time interval T, it sends no more than rT + b bytes
+
+#### Resource Reservation Protocol 资源预留协议
+
+RSVP is a network control protocol used to express QoS requirements
+
+* RSVP binds a QoS request to a flow
+* RSVP does not carry application data
+* RSVP is an important component in IETF int-serv
+* RSVP is also used in other scenarios – Traffic Engineering/VPN
+
+RSVP delivers QoS reservations along a path from source to 
+destination(s)
+
+* no routing—routing protocol computes path
+* uses soft state—periodical refresh
+
+#### RSVP Building Blocks
+
+RSVP must carry the following information:
+
+Classification information
+
+* Flows with QoS requirements must be recognized within the network
+* Includes src and dst IP addr and UDP/TCP port numbers
+
+Traffic specification (TSpecs)
+
+QoS requirements (RSpecs)
+
+* Including desired service (guaranteed or controlled load) from hosts to all routers along the path
+
+RSVP is explicitly designed to support multicast.
+
+Two types of messages to set up reservations: 
+
+* PATH message: From a sender to one or several receivers, carrying TSpec and classification information provided by sender
+
+* RESV message: From receiver, carrying RSpec indicating QoS required by receiver
+* Token bucket specification used in these messages
+
+#### RSVP Soft State
+
+RSVP maintains “soft state” in hosts and routers
+
+**Time-outs clean up reservation: Any state will automatically expire** after some time unless it is **refreshed** periodically
+
+Routing protocol determines path dynamically
+
+**Soft state is created or refreshed by PATH and RESV messages**
+
+#### drawbacks of int-serv
+
+* End-to-end connection setup and resource reservation is practically impossible: too many flows
+* State per flow is costly for routers
+
+### Differentiated Services (diff-serv) 差异服务
+
+* Basic definition: RFC 2474, RFC 2475
+* Divide traffic into small number of classes, and allocate resources per class
+* Use aggregates—No per-flow state
+* Use Service Level Agreements (SLA) as contracts—No signaling
+* Use bits in IP header—ToS field—to mark packets with their traffic class
+* Flows are aggregated in the network so that routers need only distinguish between a small number of aggregated flows, even if those aggregates contain millions of individual flows.
+
+---
+
+* 基本定义：RFC 2474、RFC 2475 
+* 将流量划分为少量类别，并为每个类别分配资源 
+* 使用聚合 - 无每个流状态 
+* 使用服务级别协议 (SLA) 作为合同 - 无信令 
+* 使用 IP 中的位 标头 — ToS 字段 — 用其流量类别标记数据包 
+* 流在网络中聚合，因此路由器只需区分少量聚合流，即使这些聚合包含数百万个单独的流。
+
+#### Diff-Serv Architecture
+
+DS Domain
+
+**Packet Marking and Aggregation**
+
+Each packet is marked with a DSCP (Differentiated Services Code Point) directly in the 8-bit IP ToS header field
+
+* 6 bits used -> 64 possible code points (in practice much less is used)
+* Code points are unique within a domain – but may change at domain borders
+
+An ingress node aggregates packets into behavior aggregates, each marked by a unique code point (DSCP)
+
+**Per Hop Behavior (PHB)**
+
+DSCP is generally set as packets cross an administrative domain
+
+**Traffic Conditioning**
+
+## 2023-09-28 long Lab
+
+Desunt cetera
+
+## 2023-10-09 Partial Exam A-2

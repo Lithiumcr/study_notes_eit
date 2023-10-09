@@ -1,6 +1,7 @@
 ---
 Author: August
 Title: Advanced Internetworking（Amir H. Payberah, et al.）
+Classroom: Sal-B & https://kth-se.zoom.us/my/payberah
 Office: Room 3425, Floor 4, Electrum 229, Kistagången 16, 16440 Kista, Sweden; Q&A Also https://docs.google.com/document/d/1Og6V4okXNLmsCwmRRAmKEMuQuTUrZBwmRkQfwYNwVoo/edit#heading=h.844hsjjugkn4
 Tel: +46-(0)72-55 44 011
 Email: payberah@kth.se
@@ -1026,4 +1027,392 @@ Kafka guarantees that **messages from a single partition are delivered to a cons
 
 ### Summary
 
-## 2023-09-22 
+## 2023-09-22 Lab3 Kafka
+
+## 2023-09-25 Scalable Stream Processing - Spark streaming
+
+Spark streaming, Run a streaming computation as a series of very small, deterministic batch jobs. 
+
+* Chops up the live stream into batches of X seconds.
+* Treats each batch as RDDs and processes them using RDD operations.
+* Discretized Stream Processing (DStream) 离散流
+
+### DStream
+
+sequence of RDDs representing a stream of data. RDD序列代表数据流
+
+Any operation applied on a DStream translates to operations on the underlying RDDs.
+
+`StreamingContext` is the main entry point of all Spark Streaming functionality.
+
+#### Input Operations
+
+* Socket connection  
+* FS
+* Connectors with external sources, e.g., Twitter, Kafka, Flume, Kinesis, ...
+
+Transformations on DStreams are still **lazy**! Until computation is kicked off explicitly by a call to the `start()` method
+
+#### Transformations
+
+DStreams support many of the transformations available on normal Spark RDDs
+
+```scala
+map
+reduce
+reduceByKey
+```
+
+#### Example - Word Count
+
+
+```scala
+import org.apache.spark._
+import org.apache.spark.streaming._
+// Create a local StreamingContext with two working threads and batch interval of 1 second.
+val conf = new SparkConf().setMaster("local[2]").setAppName("NetworkWordCount")
+val ssc = new StreamingContext(conf, Seconds(1))
+
+val lines = ssc.socketTextStream("localhost", 9999)
+
+val words = lines.flatMap(_.split(" "))
+
+val pairs = words.map(word => (word, 1))
+val wordCounts = pairs.reduceByKey(_ + _)
+wordCounts.print()
+
+// Start the computation
+ssc.start()
+// Wait for the computation to terminate
+ssc.awaitTermination()
+```
+
+#### Window Operations
+
+apply to a over a sliding window of data
+
+two parameters: window length and slide interval
+
+tumbling window effect can be achieved by making slide interval = window length
+
+##### Example - Word Count with Window
+
+```scala
+val conf = new SparkConf().setMaster("local[2]").setAppName("NetworkWordCount")
+val ssc = new StreamingContext(conf, Seconds(1))
+val lines = ssc.socketTextStream("localhost", 9999)
+val words = lines.flatMap(_.split(" "))
+val pairs = words.map(word => (word, 1))
+val windowedWordCounts = pairs.reduceByKeyAndWindow(_ + _, Seconds(30), Seconds(10))
+windowedWordCounts.print()
+ssc.start()
+ssc.awaitTermination()
+```
+
+#### States
+
+Accumulate and aggregate the results from the start of the streaming job.
+
+Need to check the previous state of the RDD in order to do something with the current RDD  
+
+mandatory: you provide a checkpointing directory for stateful streams.
+
+##### Example - Stateful Word Count
+
+```scala
+val ssc = new StreamingContext(conf, Seconds(1))
+ssc.checkpoint(".")
+//ssc.checkpoint("path/to/persistent/storage")
+val lines = ssc.socketTextStream(IP, Port)
+val words = lines.flatMap(_.split(" "))
+val pairs = words.map(word => (word, 1))
+val stateWordCount = pairs.mapWithState(StateSpec.function(updateFunc))
+
+val updateFunc = (key: String, value: Option[Int], state: State[Int]) => {
+val newCount = value.getOrElse(0)
+val oldCount = state.getOption.getOrElse(0)
+val sum = newCount + oldCount
+state.update(sum)
+(key, sum)
+}
+```
+
+### Structured Streaming
+
+Treating a live data stream as a table that is being **continuously appended**.
+
+#### Programming Model
+
+Defines a query on the input table, as a static table
+
+Three output modes:
+
+1. **Append**: only the new rows appended to the result table since the last trigger will be written to the external storage.
+2. **Complete**: the entire updated result table will be written to external storage.
+3. **Update**: only the rows that were updated in the result table since the last trigger will be changed in the external storage  
+
+#### Steps: Define a Streaming Query
+
+#### Streaming Data Sources and Sinks - Files
+
+#### Basic Operations
+
+Most of operations on DataFrame/Dataset are supported for streaming.
+
+#### Window Operations
+
+#### Handling Late Data  
+
+## 2023-09-29 Large scale graph processing
+
+### Challenge
+
+* Difficult to extract parallelism based on partitioning of the data.
+* Difficult to express parallelism based on partitioning of computation
+
+### Graph Partitioning
+
+edge-cut, vertex-cut
+
+Natural graphs: skewed Power-Law degree distribution. vertex-cut better
+
+### Example: PageRank Cal. with MapReduce
+
+$$
+Rank[i]=\sum_{j\in Nbrs(i)}w_{ji}R[j]
+$$
+
+```scala
+//map
+map(key: [url, pagerank], value: outlink_list)
+  for each outlink in outlink_list:
+    emit(key: outlink, value: pagerank / size(outlink_list))
+
+  emit(key: url, value: outlink_list)
+
+//reduce
+reducer(key: url, value: list_pr_or_urls)
+  outlink_list = []
+  pagerank = 0
+
+  for each pr_or_urls in list_pr_or_urls:
+    if is_list(pr_or_urls):
+      outlink_list = pr_or_urls
+    else
+      pagerank += pr_or_urls
+
+  emit(key: [url, pagerank], value: outlink_list)
+```
+
+#### Problems
+
+**MapReduce does not directly support iterative algorithms.** Invariant graph-topology-data **re-loaded and re-processed** at each iteration is wasting I/O, network bandwidth, and CPU  
+
+Materializations of intermediate results at every MapReduce iteration harm performance.
+
+### Pregel: Graph-Parallel Computation
+
+Inspired by **bulk synchronous parallel (BSP)** model
+
+barrier after each iteration
+
+#### Execution Model
+
+Applications run in sequence of iterations, called supersteps.
+
+* A vertex in superstep S can:
+  * reads messages sent to it in superstep S-1.
+  * sends messages to other vertices: receiving at superstep S+1.
+  * modifies its state.
+* Vertices communicate directly with one another by sending messages  
+* Superstep 0: all vertices are in the active **state**.
+* A vertex **deactivates itself by voting to halt**: no further work to do.
+* A halted vertex can **be active if it receives a message.**
+* The whole algorithm terminates when:
+  * All vertices are simultaneously inactive.
+  * There are no messages in transit 
+
+| condition          | inactive (State 0) | active   |
+| ------------------ | ------------------ | -------- |
+| msg rcv & trigger  | active             | active   |
+| vote t halt itself | -                  | inactive |
+
+#### Example: PageRank
+
+```scala
+Pregel_PageRank(i, messages):
+  // receive all the messages
+  total = 0
+  foreach(msg in messages):
+    total = total + msg
+
+// update the rank of this vertex
+R[i] = total
+
+// send new messages to neighbors
+foreach(j in out_neighbors[i]):
+  sendmsg(R[i] * wij) to vertex j
+```
+
+### GraphLab / Turi
+
+#### Example: PageRank
+
+```scala
+GraphLab_PageRank(i)
+// compute sum over neighbors
+total = 0
+foreach(j in in_neighbors(i)):
+total = total + R[j] * wji
+// update the PageRank
+R[i] = total
+// trigger neighbors to run again
+foreach(j in out_neighbors(i)):
+signal vertex-program on j
+```
+
+#### Gather-Apply-Scatter (GAS) 
+
+* Factorizes the local vertices functions into the Gather, Apply and Scatter phases.
+* Gather: accumulate information from neighborhood.
+* Apply: apply the accumulated value to center vertex.
+* Scatter: update adjacent edges and vertices  
+
+
+```scala
+PowerGraph_PageRank(i):
+  Gather(j -> i):
+    return wji * R[j]
+
+  sum(a, b):
+    return a + b
+    
+// total: Gather and sum
+Apply(i, total):
+  R[i] = total
+
+Scatter(i -> j):
+  if R[i] changed then activate(j)
+```
+
+### GraphX: the library to perform graph-parallel processing in Spark
+
+#### The Property Graph Data Model
+
+Unifies data-parallel and graph-parallel systems.
+
+Spark represent graph structured data as a property graph: logically represented as a pair of vertex and edge property collections: VertexRDD and EdgeRDD
+
+Vertex Collection -> Edge Collection -> Triplet Collection -> Building a Property Graph
+
+Graph Operators
+
+### Summary
+
+**Think like a vertex or a table?**
+
+> G. Malewicz et al., “Pregel: a system for large-scale graph processing”, ACM SIGMOD 2010
+> Y. Low et al., “Distributed GraphLab: a framework for machine learning and data mining in the cloud”, VLDB 2012
+> J. Gonzalez et al., “Powergraph: distributed graph-parallel computation on natural
+> graphs”, OSDI 2012
+> J. Gonzalez et al., “GraphX: Graph Processing in a Distributed Dataflow Framework”, OSDI 2014
+
+## 2023-10-02 Resource Management - Mesos, YARN, and Borg
+
+schedule resource offering among frameworks:
+
+Running multiple frameworks on a single cluster. 
+
+Maximize utilization and share data between frameworks
+
+Frameworks: Monolithic scheduler vs. two-level scheduler
+
+### Monolithic scheduler
+
+**Global scheduler, use a single, centralized scheduling algorithm for all jobs.**
+
+Advantages
+
+* Can achieve optimal schedule.
+
+Disadvantages
+
+* Complexity: hard to scale and ensure resilience.
+* Hard to anticipate future frameworks requirements.
+* Need to refactor existing frameworks
+
+### Two-Level Scheduler
+
+**separate concerns of resource allocation and task placement**
+
+Advantages
+
+* Simple: easier to scale and make resilient.
+* Easy to port existing frameworks, support new ones.
+
+Disadvantages
+
+* Distributed scheduling decision: not optimal.
+
+### Mesos
+
+a common resource sharing layer, over which diverse frameworks can run.
+
+Computation Model: framework, job, task
+
+Master sends resource offers to frameworks. Frameworks select which offers to accept and which tasks to run. Unit of allocation: resource offer: Vector of available resources on a node
+
+### Fairness: How to allocate resources of different types? (multiple, heterogeneous resources, e.g., CPU, memory, etc)
+
+#### max-min fairness 按需规划
+
+Share guarantee
+* Each user can get at least 1/n of the resource.
+* But will get less if her demand is less.
+
+Strategy proof
+* Users are not better off by asking for more than they need.
+* Users have no reason to lie.
+
+#### weighted max-min fairness
+
+#### Asset fairness 资源定比配置
+
+give weights to resources (e.g., 1 CPU = 1 GB) and equalize total value given to each user.
+
+**Problem: violates share grantee.**
+
+#### Dominant Resource Fairness, DRF
+
+*def* Dominant resource of a user: the resource that user has the biggest share of.
+
+Apply max-min fairness to dominant shares: give every user an equal share of her dominant resource. 
+
+Equalize the dominant share of the users.
+
+### YARN
+
+Resource Manager (RM) I Application Master (AM) I Node Manager (NM)
+
+
+
+### Borg
+
+> Cluster management system at Google
+
+
+
+### Docker and Kubernetes
+
+## 2023-10-03 Cloud data lakes
+
+Data Management
+
+Problems
+
+* system architecture
+* data reliability
+* timelines
+
+Data Lake vs. Data Warehouse
+
