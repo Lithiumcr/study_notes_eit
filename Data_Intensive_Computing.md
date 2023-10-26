@@ -20,13 +20,24 @@ Score:
 
 ### introduction
 
-Syllabus
+Objective
 
-tasks
+了解用于存储和处理海量数据的大规模分布式系统。涵盖数据密集型计算平台的各种高级主题，即存储和处理大数据的框架。
 
-group
+预期学习成果 (ILO)
+ILO1：了解数据密集型计算平台的主要概念。
+ILO2：应用所掌握的知识来存储和处理海量数据。
+ILO3：分析数据密集型计算平台的技术优点。
 
-grade
+Tasks
+
+review, lab, essay & presentation, project, exam
+
+in group
+
+Grade
+
+Course Material 课程教材
 
 ### Cloud Computing
 
@@ -45,17 +56,31 @@ grade
 * Four deployment models
 * ![img](https://s7280.pcdn.co/wp-content/uploads/2017/09/saas-vs-paas-vs-iaas.png)
 
+* 五个特征 
+  * 按需自助服务：消费者可以独立提供计算能力，而无需与服务提供商进行人工交互。
+  * 无处不在的网络访问
+  * 资源池：提供商的计算资源被集中起来为消费者提供服务
+  * 快速弹性：可以快速、弹性地配置功能，在某些情况下可以自动配置。
+  * 可衡量的服务：可以监视、控制和报告资源使用情况，为提供商和消费者提供透明度。
+* 三种服务模式
+  * 基础设施即服务（IaaS）：类似于建造新房子。示例：Amazon Web Services（EC2 实例和 S3 存储）
+  * 平台即服务（PaaS）：类似于购买空房子。示例：谷歌应用引擎
+  * 软件即服务（SaaS）：类似于住在酒店。示例：Gmail、Github
+* 四种部署模型
+
 ### Big Data
 
-buzzwords: data characterized by 4 key attributes: volume, variety, velocity and value.
+buzzwords: data characterized by 4 key attributes: **volume, variety, velocity and value.**
 
 Traditional platforms fail to show the expected performance.
 
-3-level model
+### 3-level model
 
 * resource management
-* data storage
-* data processing
+* data storage - Distributed File Systems, NoSQL DB, Messaging Systems
+* data processing, Batch, Streaming, Graph, Structured Data, ML
+
+Spark Precessing Engine
 
 ## 2023-09-01 file system
 
@@ -83,7 +108,7 @@ single unit of storage.
 * **Transparent** to user
 * Each chunk is stored as a **plain Linux file**
 
-#### Architecture
+#### GFS Architecture
 
 * master
   * Responsible for all system-wide activities 
@@ -104,19 +129,48 @@ single unit of storage.
   * Caches metadata. 
   * Does not cache data.
 
+---
+
+* 主机
+   * 负责全系统的所有活动
+     * 维护所有文件系统元数据：
+     * 命名空间、ACL、从文件到块的映射以及块的当前位置
+     * 全部保存在内存中，命名空间和文件到块的映射也持久存储在操作日志中
+   * 定期与每个 chunkserver 进行通信：
+     * 确定块位置
+     * 评估整个系统的状态
+* 块服务器
+   * 管理块
+   * 告诉master它有哪些块
+   * 将块存储为文件
+   * 保持块的数据一致性
+* 客户
+   * 向主服务器发出控制请求。
+   * 直接向块服务器发出数据请求。
+   * 缓存元数据。
+   * 不缓存数据。
+
 #### Data Flow and Control Flow 
 
 * Data flow is decoupled from control flow 
 * Clients interact with the master for metadata operations (control flow) 
 * Clients interact directly with chunkservers for all files operations (data flow)
 
-#### Why Large Chunks?
+#### Why Large Chunks? (2019)
 
 * 64MB or 128MB (much larger than most file systems)
 * Advantages 
   * Reduces the size of the metadata stored in master
   * Reduces clients’ need to interact with master 
 * Disadvantages: Wasted space due to internal fragmentation
+
+---
+
+* 64MB 或 128MB（比大多数文件系统大得多）
+* 优点
+   * 减少master中存储的元数据的大小
+   * 减少客主互动的需要
+* 缺点：由于内部碎片而浪费空间
 
 ### System interactions
 
@@ -126,6 +180,13 @@ System interface
   * create, delete, open, close, read, and write
 * snapshot: creates a copy of a file or a directory tree at low cost 
 * append: allow multiple clients to append data to the same file concurrently
+
+---
+
+* 不符合 POSIX 标准，但支持典型的文件系统操作
+   * 创建、删除、打开、关闭、读取和写入
+* 快照：以低成本创建文件或目录树的副本
+* 追加：允许多个客户端同时追加数据到同一个文件
 
 #### Read Operation
 
@@ -242,13 +303,13 @@ System interface
 2. 客户端翻译请求并将其发送给主站。
 3. 主服务器以块句柄和副本位置进行响应。
 4. 客户端将写数据推送到所有位置。
-5. 一级检查记录是否适合指定的块。
-6. 如果记录不适合，则主要：
+5. 一级节点检查记录是否适合指定的块。
+6. 如果记录不适合，则一级节点：
 * 填充块，
 * 告诉次级也这样做，
 * 并通知客户。
 * 然后客户端重试附加下一个块。
-7. 如果记录符合，则主要：
+7. 如果记录符合，则一级节点：
 * 附加记录，
 * 告诉次级也这样做，
 * 接收来自次级的响应，
@@ -266,35 +327,97 @@ System interface
 
 #### A Single Master
 
+主机拥有整个系统的全局知识，简化了设计
+（希望）主机永远不会是瓶颈
+* 客户端从不通过master读写文件数据
+* 客户端仅向 master 请求与哪些 chunkserver 通信
+* 对同一块的进一步读取不涉及主机
+
 #### The Master Operations
 
 #### Namespace Management and Locking
 
 ### Fault Tolerance
 
+#### For chunks
+
+Chunks replication (re-replication and re-balancing)
+
+Data integrity
+
+* Checksum for each chunk divided into 64KB blocks.
+* Checksum is checked every time an application reads the data.  
+
+#### For chunkserver
+
+* All chunks are versioned.
+
+* Version number updated when a new lease is granted.
+
+* Chunks with old versions are not served and are deleted.
+
+---
+
+* 所有块都有版本控制。
+* 授予新租约时更新版本号。
+* 旧版本的块不会被提供并被删除。
+
+#### For master
+
+* Master state replicated for reliability on multiple machines.
+* When master fails:
+  * It can restart almost instantly.
+  * A new master process is started elsewhere.
+* Shadow (not mirror) master provides only read-only access to file system when primary master is down.
+
+---
+
+* 主状态复制以确保多台机器上的可靠性。
+* 当master失败时：
+   * 它几乎可以立即重新启动。
+   * 一个新的主进程在别处启动。
+* 当一级主服务器关闭时，影子（非镜像）主服务器仅提供对文件系统的只读访问。
+
 ### GFS and HDFS
 
 ### Summary
 
 ## 2023-09-04 NoSQL Databases
-Database and Database Management System
+**Database**: an organized collection of data.
 
-Database: an organized collection of data.
+**Database Management System (DBMS)**: a software to capture and analyze data.
 
-Database Management System (DBMS): a software to capture and analyze data.
+### Relational SQL DB
 
-### Relational SQL DB 
+SQL is good: 
+
+* Rich language and toolset
+* Easy to use and integrate
+* Many vendors
+
 #### ACID
 
-1.Atomicity
-  All included statements in a transaction are either executed or the whole transaction is aborted without affecting the database.
-
+1. Atomicity
+    All included statements in a transaction are either executed or the whole transaction is aborted without affecting the database.
 2. Consistency
     A database is in a consistent state before and after a transaction.
 3. Isolation
     Transactions can not see uncommitted changes in the database.
 4. Durability
     Changes are written to a disk before a database commits a transaction so that committed data cannot be lost through a power failure.
+
+---
+
+数据库事务的ACID四属性
+
+1. 原子性
+    事务中包含的所有语句要么被执行，要么整个事务被中止，而不影响数据库。
+2. 一致性
+    数据库在事务之前和之后处于一致的状态。
+3. 隔离
+    事务无法看到数据库中未提交的更改。
+4. 耐用性
+    在数据库提交事务之前，更改会写入磁盘，以便提交的数据不会因电源故障而丢失。
 
 SQL Databases Challenges: Web-based applications caused spikes.
 
@@ -307,60 +430,67 @@ SQL Databases Challenges: Web-based applications caused spikes.
 ### NoSQL
 
 * Avoids:
-  * Overhead of ACID properties
-  * Complexity of SQL query
+  * Overhead of **ACID** properties
+  * **Complexity** of SQL query
 * Provides:
-  * Scalablity
-  * Easy and frequent changes to DB
-  * Large data volumes
+  * **Scalability** 可扩展性
+  * Easy and frequent **changes to DB **简单频繁更改
+  * **Large data volumes** 大数据量
 
-#### Availability
+#### Availability 可用性
 
 Replicating data to improve the availability of data.
 
 Data replication: Storing data in more than one site or node
 
-#### Consistency
+#### Consistency 一致性
 
-Strong consistency
+Strong consistency 强一致性
 
 After an update completes, any subsequent access will return the updated value
 
-Eventual consistency
+Eventual consistency 最终一致性
 * Does not guarantee that subsequent accesses will return the updated value.
 * Inconsistency window.
-* If no new updates are made to the object, eventually all accesses will return the last updated value.
+* If no new updates are made to the object, eventually all accesses will return the last updated value. 如果没有对该对象进行新的更新，最终所有访问都将返回最后更新的值。
 
 The large-scale applications have to be reliable: consistency, availability, partition
-tolerance
+tolerance 分区宽容
 
 Achieving ACID properties on large-scale applications is challenging.
 
 #### CAP theorem
 
-You can choose only two among CAP!
+**You can choose only two among CAP!**
+
+- C:Consistency，一致性，任何一个读操作总是能够读到之前写操作的结果，也就是所有节点在同一时间有相同的数据
+- A:Availablity，可用性，快速获取数据，在确定时间内返回操作结果，不管请求成功或失败都会相应
+- P:Tolenrance of Network Partition:分区容忍性，网络出现分区时（系统的节点通信故障），分离的系统也可以正常运行。系统的任意信息丢失不会影响系统的继续运作
+- CA：放弃分区容忍性，将所有事务内容放到一台机器上，可扩展性较差。传统关系数据库。
+- CP：放弃可用性，出现网络分区影响时，受影响的服务需要等待数据一致，期间无法对外提供服务。BigTable，HBase，Redis，MongoDB等
+- AP：放弃一致性，允许系统返回不一致的数据。Dynamo，CouchDB，Riak等
 
 Continue the operation in the presence of network partitions.
 
 #### NoSQL Data Models
 
-##### Key-Value Data Model
+##### Key-Value 键值 Data Model (2022)
 
 Collection of KV Pairs
 
 Ordered Key-Value: processing over key ranges.
 
-Dynamo, Scalaris, Voldemort, Riak, ...
+**Dynamo**, Scalaris, Voldemort, Riak, ...
 
-##### Column-Oriented Data Model
+##### Column-Oriented 列族 Data Model
 
 Similar to a key/value store, but the value can have multiple attributes
 
 Store and process data by column instead of row.
 
-BigTable, Hbase, Cassandra, ...
+**BigTable, Hbase, Cassandra**, ...
 
-##### Document Data Model
+##### Document 文档 Data Model
 
 Similar to a column-oriented store, but values can have complex documents.
 
@@ -368,17 +498,40 @@ Flexible schema (XML, YAML, JSON, and BSON).
 
 CouchDB, MongoDB, ...
 
-##### Graph Data Model
+##### Graph 图 Data Model
 
 graph structures with nodes, edges, and properties
 
 Neo4J, InfoGrid, ...
 
-### BigTable
+---
+
+**1、键值数据库**：Redis,SimpleDB, riak，Chordless
+
+- 优点：扩展性好，灵活性好，写操作性能高
+- 缺点：无法存储结构化信息（结构体），条件查询效率低，无法通过值来查询。
+
+**2、列族数据库**：HBase，BigTable
+
+- 优点：查询速度快，可扩展性强，复杂性低
+- 缺点：功能较少，不支持事务强一致性，不支持ACID事务
+
+**3、文档数据库**: mongoDB
+
+- 文档：本质上也是键值：HTML，JSON等
+- 优点：性能好，高并发，灵活性高，复杂性低，数据结构灵活，既可以通过键来构建索引，也可以根据内容构建索引
+- 缺点：缺乏统一的查询语法，不支持文档间的事务
+
+**4、图数据库**: Infinite Graph, Neo4j
+
+- 优点：灵活性高，支持复杂的图算法，可用于构建复杂的关系图谱
+- 缺点：复杂性高，只能支持一定的数据规模
+
+### BigTable 大表
 
 * Lots of (semi-)structured data at Google. 
   * URLs, per-user data, geographical locations, ... 
-* Distributed multi-level map 
+* Distributed multi-level map 分布式多级映射
 * **CP**: strong consistency and partition tolerance
 
 #### Data Model
@@ -406,7 +559,7 @@ Neo4J, InfoGrid, ...
   * Chubby
   * SSTable
 
-#### Tablet Serving
+#### Tablet Serving (2018)
 
 * Master Startup
 * Tablet Assignment
@@ -463,7 +616,25 @@ Declarative query language
 
 ## 2023-09-06 Scala
 
-scalable language. A blend of object-oriented and functional programming. Runs on the Java Virtual Machine.
+scalable language. A blend of object-oriented and functional programming. Runs on the Java Virtual Machine. 
+
+- **运行速度快**：使用**DAG执行引擎**以支持循环数据流与内存计算
+
+- **容易使用**：支持多种编程语言，也可以使用Spark Shell交互式编程
+
+- **通用性**：Spark提供了完整而强大的**技术栈**
+
+- **运行模式多样**：可运行于独立的集群模式中，可运行于Hadoop中，也可以运行于云环境
+
+- Scala是Spark的主要编程语言，但Spark还支持Java、Python、R作为编程语言
+
+- Scala的优势是提供了**REPL**（Read-Eval-Print Loop，交互式解释 器），提高程序开发效率
+
+- Scala特性：
+
+- - 具备强大的**并发性**（同一时间执行多个任务），支持函数式编程，可以更好地支持分布式系统
+  - **语法简洁**，能提供优雅的API
+  - 兼容Java，运行速度快，且能融合到Hadoop生态圈中
 
 ### Scala basics
 
@@ -521,15 +692,13 @@ Case Classes and Pattern Matching
 
 ### Simple Build Tool - SBT
 
-## 2023-09-11 MapReduce 映射规约
+## 2023-09-11 MapReduce 映射规约 (each year)
 
-Scale up 单元强化
+Scale up or vertically 单元强化
 
-Scale out 扩展
+Scale out or horizontally 扩展（多节点）
 
-A shared nothing architecture for processing large data sets with a parallel/distributed algorithm on clusters of commodity hardware.
-
-MapReduce takes care of parallelization, fault tolerance, and data distribution; Hide system-level details from programmers.
+A shared nothing architecture for processing large data sets with a parallel/distributed algorithm on clusters of commodity hardware. MapReduce takes care of parallelization, fault tolerance, and data distribution; Hide system-level details from programmers. 一种**无共享**架构，用于在**商用硬件集群**上使用**并行/分布式**算法处理大型数据集。MapReduce 负责并行化、容错和数据分布；对程序员隐藏系统级详细信息。
 
 ### Programming Model
 
@@ -539,14 +708,73 @@ Data-Parallel Processing
 
 example: word count of a file distributed stored
 
+```scala
+public static class MyMap extends Mapper<...> {
+  private final static IntWritable one = new IntWritable(1);
+  private Text word = new Text();
+  public void map(LongWritable key, Text value, Context context)
+    throws IOException, InterruptedException {
+    String line = value.toString();
+    StringTokenizer tokenizer = new StringTokenizer(line);
+    while (tokenizer.hasMoreTokens()) {
+      word.set(tokenizer.nextToken());
+      context.write(word, one);
+    }
+  }
+}
+
+public static class MyReduce extends Reducer<...> {
+  public void reduce(Text key, Iterator<...> values, Context context)
+    throws IOException, InterruptedException {
+    int sum = 0;
+    while (values.hasNext())
+    sum += values.next().get();
+    context.write(key, new IntWritable(sum));
+  }
+}
+
+public static void main(String[] args) throws Exception {
+  Configuration conf = new Configuration();
+  Job job = new Job(conf, "wordcount");
+
+  job.setOutputKeyClass(Text.class);
+  job.setOutputVa
+  lueClass(IntWritable.class);
+
+  job.setMapperClass(MyMap.class);
+  job.setCombinerClass(MyReduce.class);
+  job.setReducerClass(MyReduce.class);
+
+  job.setInputFormatClass(TextInputFormat.class);
+  job.setOutputFormatClass(TextOutputFormat.class);
+
+  FileInputFormat.addInputPath(job, new Path(args[0]));
+  FileOutputFormat.setOutputPath(job, new Path(args[1]));
+
+  job.waitForCompletion(true);
+}
+```
+
+
 Parallelize the data and process;
 
 * Each Map task (typically) operates on a single HDFS block.
 * Map tasks (usually) run on the node where the block is stored.
 * Each Map task generates a set of intermediate key/value pairs.
 * Sorts and consolidates intermediate data from all mappers, after all Map tasks are complete and before Reduce tasks start;
-* Each Reduce task operates on all intermediate values associated with the same intermediate key. 
+* Each Reduce task operates on all intermediate values associated with the same intermediate key.
 * Produces the final output.
+
+---
+
+并行化数据和流程；
+
+* 每个 Map 任务（通常）在单个 HDFS 块上运行。
+* Map任务（通常）在存储块的节点上运行。
+* 每个Map任务都会生成一组中间键/值对。
+* 在所有 Map 任务完成之后、Reduce 任务开始之前，对来自所有 Mappers 的中间数据进行排序和合并；
+* 每个Reduce 任务都对与同一中间键关联的所有中间值进行操作。
+* 产生最终输出。
 
 Data Flow
 
@@ -560,15 +788,25 @@ The Mapper may use or completely ignore the input key.
 
 A standard pattern is to read one line of a file at a time. Key: the byte offset; Value: the content of the line. 
 
-After the Map phase, all intermediate (key, value) pairs are grouped by the intermediate keys, **(key, list of values)** passed to a Reducer
+After the Map phase, all intermediate (key, value) pairs are grouped by the intermediate keys, **(key, list of values)** passed to a Reducer.
+
+---
+
+输入：（键，值）对
+
+输出：（键，值）对的列表
+
+映射器可以使用或完全忽略输入键。
+
+标准模式是一次读取文件的一行。键：字节偏移量；值：该行的内容。
+
+在Map阶段之后，所有中间（键，值）对都按中间键分组，**（键，值列表）**传递给Reducer
 
 #### Reducer
 
 Input: (key, list of values) pairs 
 
 Output: zero or more final (key, value) pairs
-
-
 
 #### MapReduce Algorithm Design
 
@@ -598,12 +836,12 @@ MapReduce Execution
 
 ---
 
-1. 用户程序将输入文件分为M个分片，大小为HDFS块（64 MB），将它们转换为**键/值对**； 在集群上启动该程序的多个副本。
+1. 用户程序将输入文件分为M个分片，大小为HDFS区块（64 MB），将它们转换为**键/值对**； 在集群上启动该程序的多个副本。
 2. **master**挑选空闲的worker并给每个分配一个map任务或一个reduce任务。
-3. 地图工作者读取相应输入分割的内容。 由**用户定义的映射函数**生成的键/值对缓冲在内存中。
+3. 映射工读取相应输入分割的内容。 由**用户定义的映射函数**生成的键/值对缓冲在内存中。
 4. 缓冲的对定期写入本地磁盘，划分为 R 个区域（hash(key) mod R）； 本地磁盘上缓冲对的位置被传回主节点，以将这些位置转发给reduce工作节点。
 5. **Reduce Worker 从 Map Worker 的本地磁盘远程读取缓冲数据**，然后根据中间键对其进行排序。
-6. reduceworker迭代中间数据：对于每个唯一的中间键，它将键和相应的中间值集传递给**用户定义的reduce函数**。 reduce 函数的输出被附加到最终输出文件中。
+6. reduce worker迭代中间数据：对于每个唯一的中间键，它将键和相应的中间值集传递给**用户定义的reduce函数**。 reduce 函数的输出被附加到最终输出文件中。
 7. master唤醒用户程序。
 
 #### Fault Tolerance
@@ -628,17 +866,30 @@ Spark: Another way to batch data
 
 Motivation: **Acyclic data flow** from stable storage to stable storage during MapReduce
 
+- Spark的设计遵循**“一个软件栈满足不同应用场景”**的理念，逐渐形成了一套完整的生态系统
+- 既能够提供内存计算框架，也可以支持SQL即席查询、实时流式计算、机器学习和图计算等
+- 可以部署在资源管理器YARN之上，提供一站式的大数据解决方案
+- 因此，Spark所提供的生态系统足以应对上述三种场景，即同时支持批处理、交互式查询和流数据处理
+
+**Spark生态系统**
+
+- Spark Core：复杂的批处理
+- Spark SQL：基于历史数据的交互式查询
+- Spark Streaming：基于实时数据流的数据处理
+- MLLib：基于历史数据的数据挖掘（机器学习）
+- GraphX：图结构数据的处理
+
 ### Spark Applications Architecture 
 
-**1 Driver + some executors** based on the Cluster manager process
+**1 Driver + some executors** based on the **Cluster manager** 集群管理节点 process
 
-Driver Process, SparkSession, main()
+Driver Process 控制进程, SparkSession, main()
 
 * Maintaining information about the Spark application
 * Responding to a user’s program or input
 * Analyzing, distributing, and scheduling work across the executors
 
-Executor Processes
+Executor Processes 多个执行进程
 
 * Executing code assigned to it by the driver
 
@@ -664,13 +915,13 @@ does, e.g., SQL, Hive and streaming.
 
 ### Programming Model
 
-**directed acyclic graphs (DAG) 有向无环图** data flow
+**directed acyclic graphs (DAG) 有向无环图** data flow, 反映RDD之间的依赖关系
 
-A data flow is composed of any number of **data sources, operators, and data sinks** by connecting their inputs and outputs.
+A data flow is composed of any number of **data sources, operators, and data sinks** by connecting their inputs and outputs. 数据流由任意数量的**数据源、运算符和数据接收器**通过连接其输入和输出而组成。
 
 Parallelizable operators
 
-**Resilient Distributed Datasets (RDD) 弹性分布式数据集**
+#### Resilient Distributed Datasets (RDD) 弹性分布式数据集
 
 * A distributed memory abstraction
 * Immutable collections of objects spread across a cluster, like LinkedList
@@ -681,17 +932,38 @@ Parallelizable operators
 
 ---
 
-* 分布式内存抽象模型
+* 分布式内存抽象模型，分布式存储的抽象概念，提供了一种高受限的共享内存模型
 * 分布在集群中的不可变对象集，如同 LinkedList
 * RDD可被分为许多**分区**，**原子**的。
 * 1个RDD的分区物理上可以存储在集群的不同节点上
 * RDD 是 Spark 1.x 系列中的主要 API。
 * 实际上，您运行的所有 Spark 代码都会编译为 RDD
+* 每个Application都有自己专属的Executor进程，并且该进程在Application运行期间一直驻留。Executor进程以多线程的方式运行Task
+* Spark运行过程与资源管理器无关，只要能够获取Executor进程并保持通信即可
+* Task采用了数据本地性和推测执行等优化机制
 
 Two types of RDDs: Generic RDD, Key-value RDD
 
 KV RDD have special operations, such as aggregation, and a concept of
 custom partitioning by key
+
+- 设计背景
+
+- - 许多迭代式算法（比如机器学习、图算法等）和交互式数据挖掘工具，共同之处是，不同计算阶段之间会重用中间结果
+  - MapReduce框架把中间结果写入HDFS，大量数据复制、磁盘IO和序列化开销
+  - 为此，RDD提供了一个抽象的数据架构，不必担心底层数据的分布式特性，只需将具体的**应用逻辑表达为一系列转换处理，不同RDD之间的转换操作形成依赖关系**，可以实现**管道化**，避免中间数据存储和磁盘IO消耗
+
+- RDD的概念
+
+- - 分布式对象集合，本质上是一个只读的分区记录集合
+  - 每个RDD可分成多个分区，每个分区就是一个数据集片段
+  - RDD提供一种高受限的共享内存模型：RDD是只读记录分区的集合，不能直接修改
+
+- Spark使用RDD后为什么能高效计算？
+
+- - 高效的容错机制：不需要冗余复制来容错
+  - 中间结果持久化到内存
+  - 存放的数据可以是Java对象，避免了不必要的对象序列化与反序列化
 
 Creating RDDs
 
@@ -822,10 +1094,6 @@ DataSet, Structured Data Execution
 #### Summary
 
 ### Lab intro
-
-
-
-
 
 ## 2023-09-18 Structured data processing
 
@@ -1291,7 +1559,7 @@ PowerGraph_PageRank(i):
 Apply(i, total):
   R[i] = total
 
-Scatter(i -> j):
+Scatter(* -> j):
   if R[i] changed then activate(j)
 ```
 
@@ -1362,7 +1630,7 @@ Computation Model: framework, job, task
 
 Master sends resource offers to frameworks. Frameworks select which offers to accept and which tasks to run. Unit of allocation: resource offer: Vector of available resources on a node
 
-### Fairness: How to allocate resources of different types? (multiple, heterogeneous resources, e.g., CPU, memory, etc)
+### Fairness: How to allocate resources of different types? (2019, multiple, heterogeneous resources, e.g., CPU, memory, etc)
 
 #### max-min fairness 按需规划
 
@@ -1376,19 +1644,26 @@ Strategy proof
 
 #### weighted max-min fairness
 
-#### Asset fairness 资源定比配置
+#### Asset fairness 资产公平（定比配置）
 
-give weights to resources (e.g., 1 CPU = 1 GB) and equalize total value given to each user.
+give weights to resources (e.g., 1 CPU = 1 GB) and equalize total value given to each user. 资源赋权后（将CPU和RAM折算加总）得到总价值，均分给各个用户
 
 **Problem: violates share grantee.**
+$$
+\max \vec x=(x_1, x_2,...)\\ s.t.
+A\vec x\le\vec y,\ A=\matrix{a11, a12\\a21, a22}\\
+Value(x_1)=Value(x2)=...=\frac 1n Asset
+$$
 
-#### Dominant Resource Fairness, DRF
+#### Dominant Resource Fairness, DRF 主控资源公平
 
 *def* Dominant resource of a user: the resource that user has the biggest share of.
 
-Apply max-min fairness to dominant shares: give every user an equal share of her dominant resource. 
+Apply max-min fairness to dominant shares: give every user an equal share of her dominant resource. Equalize the dominant share of the users.
 
-Equalize the dominant share of the users.
+用户主控资源：用户占有最大份额的资源。
+
+将最大-最小公平应用于主控份额：**为每个用户提供其（可以是不同类型的）主控资源的平等份额**。即均衡用户的主控份额。
 
 ### YARN
 
@@ -1404,11 +1679,61 @@ Resource Manager (RM) I Application Master (AM) I Node Manager (NM)
 
 ### Docker and Kubernetes
 
+
+
 ## 2023-10-03 Cloud data lakes
 
-Data Management
+### Evolution of Data Management
 
-Problems
+#### Data Warehouses 数据仓 (1980s)
+
+**ETL (Extract, Transform, Load)** data directly from operational database systems. 
+
+Purpose-built for **SQL analytics and BI**: schemas, indexes, caching, etc.
+
+Powerful **management features** such as ACID transactions and time travel.
+
+#### Data Lakes 数据湖 (2010s)
+
+Could not support rapidly growing unstructured and semi-structured data: time series, logs, images, documents, etc.
+
+High cost to store large datasets.
+
+No support for data science and ML. 
+
+Low-cost storage to hold all raw data, e.g., Amazon S3, and HDFS.
+
+ETL jobs then load specific data into warehouses, possibly for further ELT.
+
+Directly readable in ML libraries (e.g., TensorFlow and PyTorch) due to open file format.  
+
+---
+
+(2022)
+
+**数据仓**
+
+直接从操作数据库系统中**提取、转换、加载**数据。
+
+专为 SQL 分析和 BI 构建：架构、索引、缓存等。
+
+强大的管理功能，例如 ACID 事务和时间旅行。
+
+**数据湖**
+
+无法支持快速增长的非结构化和半结构化数据：时间序列、日志、图像、文档等。
+
+存储大型数据集的成本很高。
+
+不支持数据科学和机器学习。
+
+低成本存储用于保存所有原始数据，例如 Amazon S3 和 HDFS。
+
+然后，**ETL 作业将特定数据加载到仓库中，可能用于进一步的 ELT。**
+
+由于文件格式开放，可在 ML 库（例如 TensorFlow 和 PyTorch）中直接读取。
+
+#### Problems today
 
 * system architecture
 * data reliability
@@ -1416,3 +1741,8 @@ Problems
 
 Data Lake vs. Data Warehouse
 
+### Lakehouse
+
+### Delta Lake
+
+### Summary

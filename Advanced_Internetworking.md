@@ -282,13 +282,23 @@ Link-State Routing, relies on Layer 2 transport (rather than IP)
 
 vector-based
 
-\- when i receives a vector from j, **R(i) vector = min(R(j) + cost(i,j) , R(i))**
+\- **when i receives a vector from j, R(i) vector = min(R(j) + cost(i,j) , R(i))**
 
 must **converge** to the shortest (monotone bounded principle)
 
+**problem: Count to Infinity**
+
 **problem: Slow convergence**
 
-Split Horizon 水平分割, cannot solve all problems 
+In the presence of failures: it converges but we have to bound the highest
+path-cost
+
+**Mitigations** (not a complete solution!)
+
+1. Triggered Update: Immediately announces the broken link when it happens 即损即报
+2. **Split Horizon 水平分割**, Do not propagate information about a route over the same interface from which the route arrived. Split horizon only prevents loops between adjacent routers but cannot solve all problems, because i.g. R2 still believes that N is reachable through R3 after R1 reports to R2 that N is unreachable and then misleads R1 back. 不通过路由到达的同一接口再传播有关路由的信息。水平分割仅防止相邻路由器之间形成环路。
+3. **Poison Reverse 毒性逆转**, Advertise reverse routes with a metric of 16; handles some more error cases than split horizon
+4. **Hold down 抑制** When a route is removed, no update of this route is accepted for some period of time (hold-down time) to give everyone a chance to remove the route. 当一条路由被删除时，在一段时间内（抑制时间）不接受该路由的更新——以便让每个人都有机会删除该路由。
 
 ### Routing Information Protocol - RIP 路由信息协议
 RIP-1 (RFC 1058), RIP-2 (RFC 2453)
@@ -313,7 +323,7 @@ Split Horizon
 #### Advantage
 
 * Lower memory overhead than OSPF (no need to store the topology)
-* Computation of shortest paths sometimes easier (think why/when)
+* Computation of shortest paths sometimes easier (why/when?)
 * RIP is generally available
 * simple to configure
 
@@ -708,7 +718,7 @@ PIM-SM（稀疏模式）
 * 扩展 CBT，使路由器可以知道多个会合点
 * 可以构建共享树和源分发树
 
-#### Multicast Source Discovery Protocol, MSDP **多播源发现协议**
+#### Multicast Source Discovery Protocol, MSDP 多播源发现协议
 
 Interconnects multiple PIM-SM domains
 * Enables rendevous-point (RP) redundancy
@@ -1150,7 +1160,7 @@ RTSP allows media player to control stream transmission
 
 Server keeps track of client’s state (session#, sequence#)
 
-#### Delay Jitter
+#### Delay Jitter 时延抖动
 
 gap between neighbor packets arrivals
 
@@ -1429,7 +1439,10 @@ Once unique LLA is established, this can be used to communicate with other hosts
 
 **RPL Tree Terminology**
 
-RPL Message Exchange—DODAG Formation
+RPL Message Exchange—**DODAG** Formation
+
+A RPL DODAG is a destination-oriented directed acyclic graph. All edges in the graph are oriented so that no loops exist between the nodes. In a DODAG, the edges are arranged in paths oriented towards and terminating in a single root. It is basically a RPL tree. The sensor gateway would probably be located at the single root.
+
 1. A multicasts DIOs, itself with Rank 0
 2. B, C, D, E receive DIOs and determine their rank (1, 1, 3, 4)
 3. B, C, D, E send DAOs to A
