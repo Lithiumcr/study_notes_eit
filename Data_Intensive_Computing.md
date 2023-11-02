@@ -1022,7 +1022,7 @@ Transformations allow us to build up our logical transformation plan.
 
 * Actions to view data in the console
 * Actions to collect data to native objects in the respective language
-* Actions to write to output data sources  
+* Actions to write to output data sources
 
 #### Example: Spark Word-Count
 
@@ -1652,7 +1652,7 @@ give weights to resources (e.g., 1 CPU = 1 GB) and equalize total value given to
 $$
 \max \vec x=(x_1, x_2,...)\\ s.t.
 A\vec x\le\vec y,\ A=\matrix{a11, a12\\a21, a22}\\
-Value(x_1)=Value(x2)=...=\frac 1n Asset
+Value(x_1)=Value(x2)=...=\frac 1n Asset
 $$
 
 #### Dominant Resource Fairness, DRF 主控资源公平
