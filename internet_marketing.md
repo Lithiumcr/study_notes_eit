@@ -27,7 +27,52 @@ know consumers
 
 case study needs to access and sense the reality in the flesh, not just google or repeat second-hand info.
 
-groupwork
+**groupwork assignment grading is subjective and discrete**
 
 Digital marketing
 
+Marketing principles
+
+## 2023-11-03
+
+interface
+
+generic digital marketing strategy development process
+
+customer loyalty
+
+## 2023-11-07
+
+microscope analysis 
+
+customers
+
+## 2023-11-16
+(lost)
+
+## 2023-11-17
+Case study demandings
+
+use systematic analytic approach to define business problems, with limited data. decision is necessary.
+
+SOSTAC planing system: 形势分析、目标、战略、战术、行动、督察（循环）
+
+capability model
+
+digital channel-specific SWOT analysis
+
+## 2023-11-22
+
+tbd
+
+## 2023-11-24
+
+### Case 1 report
+
+boo.com boohoo.com
+
+### Case 2 report
+
+L'oreal
+
+### 2023-11-30
