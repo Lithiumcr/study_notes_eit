@@ -24,4 +24,3 @@ video material essential to watch
 2P Team
 
 Q&A
-

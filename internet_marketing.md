@@ -69,10 +69,38 @@ tbd
 
 ### Case 1 report
 
-boo.com boohoo.com
+boohoo.com
 
 ### Case 2 report
 
 L'oreal
 
 ### 2023-11-30
+
+
+
+### 2023-12-01
+
+customer experience design
+
+ASOS plc
+
+### 2023-12-05
+
+Anna Nyquist
+
+SDG:s UN's Sustainable development goals. 17 detailed goals
+
+Standards
+
+Truthfulness, transparency, credibility
+
+Greenwashing, pingkwashing, SDG-washing
+
+Spotify
+
+### 2023-12-07 (Osquars Backe)
+
+Buffer
+
+### 2023-12-14
